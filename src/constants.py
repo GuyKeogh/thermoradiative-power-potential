@@ -8,12 +8,6 @@ from astropy import constants as const
 class Constants:
     q = const.si.e
 
-    """
-    q: float = (
-        1.60217653 * 10 ** (-19) * u.coulomb
-    )  # magnitude of electrical charge on electron [C]
-    """
-
     T_deep_space: Quantity = 3 * u.Kelvin  # temperature of deep space [K]
     T_earth: Quantity = (
         300
