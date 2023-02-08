@@ -49,7 +49,7 @@ class TotalPowerOutput:
     def _get_term_in_photon_flux_integration(
         self, E: Quantity, T: Quantity, Delta_mu: Quantity
     ) -> Quantity:
-        print(f"Trying E={E}")
+        # print(f"Trying E={E}")
 
         exponential_term_quantity: Final[Quantity] = (E - Delta_mu) / (
             const.k_B.to(u.electronvolt / u.Kelvin) * T
@@ -64,7 +64,7 @@ class TotalPowerOutput:
             mpmath.exp(exponential_term) - 1
         )
 
-        print(f"Exp term: {exponential_term}")
+        # print(f"Exp term: {exponential_term}")
         self.integration_results_dict[self.integration_iterator] = (E.value, result)
         self.integration_iterator += 1
         return result
@@ -77,7 +77,7 @@ class TotalPowerOutput:
 
         return 0 if E.to(self.E_g.unit) < self.E_g else 1
 
-    def get_extractible_power_density(self) -> Quantity:
+    def get_extractible_power_density(self, t_surface: Quantity) -> Quantity:
         V: Final[Quantity] = -0.1 * u.volt
         flux_from_atmosphere: Final[
             Quantity
@@ -87,7 +87,7 @@ class TotalPowerOutput:
         flux_from_cell: Final[
             Quantity
         ] = self.get_photon_flux_emitted_from_semiconductor(
-            T=Constants.T_earth, Delta_mu=(Constants.q * V).to(u.electronvolt)
+            T=t_surface, Delta_mu=(Constants.q * V).to(u.electronvolt)
         )
         P = Constants.q * V * (flux_from_atmosphere - flux_from_cell)
         # return flux_from_cell

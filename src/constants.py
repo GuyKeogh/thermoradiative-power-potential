@@ -8,14 +8,7 @@ from astropy.units import Quantity
 @dataclass(frozen=True)
 class Constants:
     q = const.si.e
-
     T_deep_space: Quantity = 3 * u.Kelvin
-
-    # T_deep_space: Quantity = 3 * u.Kelvin  # temperature of deep space [K]
-    T_earth: Quantity = (
-        300
-        * u.Kelvin  # example temperature of the Earth [K]. In reality, T_surf ranges from 220K to 320K.
-    )
 
 
 @dataclass(frozen=True)
