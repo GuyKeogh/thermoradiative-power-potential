@@ -10,7 +10,7 @@ import xarray as xr
 
 
 class SurfaceTemperature:
-    def __init__(self, lon: float, lat: float, year: int, month: int):
+    def __init__(self, lon: float, lat: float, year: int, months: list[int]):
         self.c = cdsapi.Client()
 
         lon_min: Final[int] = math.floor(lon)
@@ -18,44 +18,46 @@ class SurfaceTemperature:
         lat_min: Final[int] = math.floor(lat)
         lat_max: Final[int] = math.ceil(lat)
 
-        filepath: Final[str] = os.path.abspath(
-            self._generate_filepath(
-                lon_min=lon_min,
-                lon_max=lon_max,
-                lat_min=lat_min,
-                lat_max=lat_max,
-                year=year,
-                month=month,
+        self.temperature_datasets: [int, xr.Dataset] = dict()
+        month: int
+        for month in months:
+            filepath: str = os.path.abspath(
+                self._generate_filepath(
+                    lon_min=lon_min,
+                    lon_max=lon_max,
+                    lat_min=lat_min,
+                    lat_max=lat_max,
+                    year=year,
+                    month=month,
+                )
             )
-        )
-        if os.path.isfile(filepath):
-            print("Already exists!")
-        else:
-            print("File doesn't exist! Downloading...")
-            self._download_surface_temperature_file_for_month_for_region(
-                filepath=filepath,
-                lon_min=lon_min,
-                lon_max=lon_max,
-                lat_min=lat_min,
-                lat_max=lat_max,
-                year=year,
-                month=month,
-            )
-        self.temperature_dataset: Final[xr.Dataset] = xr.open_dataset(
-            filepath, engine="cfgrib"
-        )
+            if os.path.isfile(filepath):
+                print("Already exists!")
+            else:
+                print("File doesn't exist! Downloading...")
+                self._download_surface_temperature_file_for_month_for_region(
+                    filepath=filepath,
+                    lon_min=lon_min,
+                    lon_max=lon_max,
+                    lat_min=lat_min,
+                    lat_max=lat_max,
+                    year=year,
+                    month=month,
+                )
+            temperature_dataset: xr.Dataset = xr.open_dataset(filepath, engine="cfgrib")
+            self.temperature_datasets[month] = temperature_dataset
 
     def get_temperature(self, lon: float, lat: float, date: datetime) -> float:
         hour_str = str(date.hour) if date.hour >= 10 else f"0{date.hour}"
         day_str = str(date.day) if date.day >= 10 else f"0{date.day}"
         month_str = str(date.month) if date.month >= 10 else f"0{date.month}"
-        if self.temperature_dataset["skt"].sel(
+        if self.temperature_datasets[date.month]["skt"].sel(
             latitude=lat, longitude=lon, method="nearest"
         ).coords["time"][date.hour + date.day * 24 - 24] == np.datetime64(
             f"{date.year}-{month_str}-{day_str}T{hour_str}:00"
         ):
             t_surface: float = (
-                self.temperature_dataset["skt"]
+                self.temperature_datasets[date.month]["skt"]
                 .sel(latitude=lat, longitude=lon, method="nearest")
                 .values[date.hour]
             )
@@ -160,20 +162,4 @@ class SurfaceTemperature:
                 ],
             },
             filepath,
-        )
-
-    def _download_surface_temperature_file(
-        self, lon_min: int, lon_max: int, lat_min: int, lat_max: int, year: int
-    ):
-        grib_file = self.c.retrieve(
-            "reanalysis-era5-land",
-            {
-                "year": "2023",
-                "variable": "skin_temperature",
-                "month": "01",
-                "day": "30",
-                "time": "01:00",
-                "format": "grib",
-            },
-            "download.grib",
         )
