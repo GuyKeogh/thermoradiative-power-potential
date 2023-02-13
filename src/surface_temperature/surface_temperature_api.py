@@ -7,22 +7,29 @@ from typing import Final
 import cdsapi
 import numpy as np
 import xarray as xr
+from astropy import units as u
 
 
 class SurfaceTemperature:
     def __init__(self, lon: float, lat: float, year: int, months: list[int]):
         self.c = cdsapi.Client()
 
+        required_dataset_shortnames: Final[list[str]] = ["skt"]
+
         lon_min: Final[int] = math.floor(lon)
         lon_max: Final[int] = math.ceil(lon)
         lat_min: Final[int] = math.floor(lat)
         lat_max: Final[int] = math.ceil(lat)
 
-        self.temperature_datasets: [int, xr.Dataset] = dict()
+        self.temperature_datasets: [tuple[int, str], xr.Dataset] = dict()
         month: int
-        for month in months:
+        iterator = [(f, s) for f in months for s in required_dataset_shortnames]
+        for month, dataset_shortname in iterator:
+            print(f"Downloading for month {month} and shortname {dataset_shortname}")
+
             filepath: str = os.path.abspath(
                 self._generate_filepath(
+                    dataset_shortname=dataset_shortname,
                     lon_min=lon_min,
                     lon_max=lon_max,
                     lat_min=lat_min,
@@ -37,6 +44,7 @@ class SurfaceTemperature:
                 print("File doesn't exist! Downloading...")
                 self._download_surface_temperature_file_for_month_for_region(
                     filepath=filepath,
+                    dataset_shortname=dataset_shortname,
                     lon_min=lon_min,
                     lon_max=lon_max,
                     lat_min=lat_min,
@@ -45,29 +53,52 @@ class SurfaceTemperature:
                     month=month,
                 )
             temperature_dataset: xr.Dataset = xr.open_dataset(filepath, engine="cfgrib")
-            self.temperature_datasets[month] = temperature_dataset
+            self.temperature_datasets[(month, dataset_shortname)] = temperature_dataset
 
-    def get_temperature(self, lon: float, lat: float, date: datetime) -> float:
+    def get_value_from_dataset(
+        self, dataset_shortname: str, lon: float, lat: float, date: datetime
+    ) -> float:
         hour_str = str(date.hour) if date.hour >= 10 else f"0{date.hour}"
         day_str = str(date.day) if date.day >= 10 else f"0{date.day}"
         month_str = str(date.month) if date.month >= 10 else f"0{date.month}"
-        if self.temperature_datasets[date.month]["skt"].sel(
+        if self.temperature_datasets[(date.month, dataset_shortname)].sel(
             latitude=lat, longitude=lon, method="nearest"
         ).coords["time"][date.hour + date.day * 24 - 24] == np.datetime64(
             f"{date.year}-{month_str}-{day_str}T{hour_str}:00"
         ):
-            t_surface: float = (
-                self.temperature_datasets[date.month]["skt"]
+            return (
+                self.temperature_datasets[(date.month, dataset_shortname)][
+                    dataset_shortname
+                ]
                 .sel(latitude=lat, longitude=lon, method="nearest")
                 .values[date.hour]
             )
         else:
             raise ValueError("Date does not correspond to expected")
+
+    def get_surface_temperature(
+        self, lon: float, lat: float, date: datetime
+    ) -> float | u.Quantity:
+        t_surface: Final[float] = self.get_value_from_dataset(
+            dataset_shortname="skt", lon=lon, lat=lat, date=date
+        )
         print(f"Got temperature {t_surface}K at {date}")
-        return t_surface
+        return t_surface * u.Kelvin
+
+    def get_downwards_thermal_radiation(
+        self, lon: float, lat: float, date: datetime
+    ) -> float | u.Quantity:
+        downwards_thermal_radiation: Final[float] = self.get_value_from_dataset(
+            dataset_shortname="strd", lon=lon, lat=lat, date=date
+        )
+        print(
+            f"Got downwards thermal radiation {downwards_thermal_radiation}Jm^(-2) at {date}"
+        )
+        return downwards_thermal_radiation * (u.Joule / u.metre**2)
 
     def _generate_filepath(
         self,
+        dataset_shortname: str,
         lon_min: int,
         lon_max: int,
         lat_min: int,
@@ -75,11 +106,12 @@ class SurfaceTemperature:
         year: int,
         month: int,
     ) -> str:
-        return f"data/surface_temperature/{year}/{month}/{lat_min}_{lat_max}_{lon_min}_{lon_max}/download.grib"
+        return f"data/era5_{dataset_shortname}/{year}/{month}/{lat_min}_{lat_max}_{lon_min}_{lon_max}/download.grib"
 
     def _download_surface_temperature_file_for_month_for_region(
         self,
         filepath: str,
+        dataset_shortname: str,
         lon_min: int,
         lon_max: int,
         lat_min: int,
@@ -87,11 +119,15 @@ class SurfaceTemperature:
         year: int,
         month: int,
     ) -> None:
+        dataset_shortname_to_variable_name_dict: Final[dict[str, str]] = dict(
+            skt="skin_temperature", strd="surface_thermal_radiation_downwards"
+        )
+
         os.makedirs(pathlib.Path(filepath).parent, exist_ok=True)
         self.c.retrieve(
             "reanalysis-era5-land",
             {
-                "variable": "skin_temperature",
+                "variable": dataset_shortname_to_variable_name_dict[dataset_shortname],
                 "year": str(year),
                 "month": str(month),
                 "day": [
