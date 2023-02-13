@@ -61,9 +61,11 @@ class SurfaceTemperature:
         hour_str = str(date.hour) if date.hour >= 10 else f"0{date.hour}"
         day_str = str(date.day) if date.day >= 10 else f"0{date.day}"
         month_str = str(date.month) if date.month >= 10 else f"0{date.month}"
+        index_in_dataset: Final[int] = date.hour + date.day * 24 - 24
+
         if self.temperature_datasets[(date.month, dataset_shortname)].sel(
             latitude=lat, longitude=lon, method="nearest"
-        ).coords["time"][date.hour + date.day * 24 - 24] == np.datetime64(
+        ).coords["time"][index_in_dataset] == np.datetime64(
             f"{date.year}-{month_str}-{day_str}T{hour_str}:00"
         ):
             return (
@@ -71,7 +73,7 @@ class SurfaceTemperature:
                     dataset_shortname
                 ]
                 .sel(latitude=lat, longitude=lon, method="nearest")
-                .values[date.hour]
+                .values[index_in_dataset]
             )
         else:
             raise ValueError("Date does not correspond to expected")
