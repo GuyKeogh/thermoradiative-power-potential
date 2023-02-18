@@ -8,7 +8,6 @@ from astropy import constants as const
 from astropy import units as u
 from astropy.units import Quantity
 
-from src.constants import Constants
 from src.exceptions import UnitError
 
 
@@ -77,18 +76,20 @@ class TotalPowerOutput:
 
         return 0 if E.to(self.E_g.unit) < self.E_g else 1
 
-    def get_extractible_power_density(self, t_surface: Quantity) -> Quantity:
+    def get_extractible_power_density(
+        self, t_surface: Quantity, t_sky: Quantity
+    ) -> Quantity:
         V: Final[Quantity] = -0.1 * u.volt
         flux_from_atmosphere: Final[
             Quantity
         ] = self.get_photon_flux_emitted_from_semiconductor(
-            T=Constants.T_deep_space, Delta_mu=(0 * u.electronvolt)
+            T=t_sky, Delta_mu=(0 * u.electronvolt)
         )  # .value * (u.second / (u.meter**2))
         flux_from_cell: Final[
             Quantity
         ] = self.get_photon_flux_emitted_from_semiconductor(
-            T=t_surface, Delta_mu=(Constants.q * V).to(u.electronvolt)
+            T=t_surface, Delta_mu=(const.si.e * V).to(u.electronvolt)
         )
-        P = Constants.q * V * (flux_from_atmosphere - flux_from_cell)
+        P = const.si.e * V * (flux_from_atmosphere - flux_from_cell)
         # return flux_from_cell
         return P
