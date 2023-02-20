@@ -106,14 +106,12 @@ class SurfaceTemperature:
         t_surface: Final[float] = self.get_value_from_dataset(
             dataset_shortname="t2m", date=date
         )
-        print(f"Got temperature {t_surface}K at {date}")
         return t_surface * u.Kelvin
 
     def get_surface_temperature(self, date: datetime) -> u.Quantity:
         t_surface: Final[float] = self.get_value_from_dataset(
             dataset_shortname="skt", date=date
         )
-        print(f"Got temperature {t_surface}K at {date}")
         return t_surface * u.Kelvin
 
     def get_downwards_thermal_radiation(
@@ -121,9 +119,6 @@ class SurfaceTemperature:
     ) -> u.Quantity:
         downwards_thermal_radiation: Final[float] = self.get_value_from_dataset(
             dataset_shortname="strd", date=date
-        )
-        print(
-            f"Got downwards thermal radiation {downwards_thermal_radiation}Jm^(-2) at {date}"
         )
         if convert_to_watts:
             return (downwards_thermal_radiation / (60 * 60)) * (u.watt / u.meter**2)

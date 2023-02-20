@@ -48,19 +48,16 @@ class TotalPowerOutput:
     def _get_term_in_photon_flux_integration(
         self, E: Quantity, T: Quantity, Delta_mu: Quantity
     ) -> Quantity:
-        # print(f"Trying E={E}")
-
-        exponential_term_quantity: Final[Quantity] = (E - Delta_mu) / (
+        exponential_term: Final[Quantity] = (E - Delta_mu) / (
             const.k_B.to(u.electronvolt / u.Kelvin) * T
         )
-        if exponential_term_quantity.unit != u.dimensionless_unscaled:
-            raise UnitError(
-                f"Exponential term should be dimensionless, not {exponential_term_quantity.unit}"
-            )
-        exponential_term: Final[float] = exponential_term_quantity.value
 
+        if exponential_term.unit != u.dimensionless_unscaled:
+            raise UnitError(
+                f"Exponential term should be dimensionless, not {exponential_term.unit}"
+            )
         result = (self.get_energy_dependent_emissivity(E) * E**2) / (
-            mpmath.exp(exponential_term) - 1
+            mpmath.exp(exponential_term.value) - 1
         )
 
         # print(f"Exp term: {exponential_term}")
@@ -93,3 +90,32 @@ class TotalPowerOutput:
         P = const.si.e * V * (flux_from_atmosphere - flux_from_cell)
         # return flux_from_cell
         return P
+
+    def get_total_power_output(
+        self,
+        voltage: Quantity,
+        t_sky: Quantity,
+        t_cell: Quantity,
+        chemical_potential_driving_emission: Quantity,
+    ) -> Quantity:
+        eta: Final[
+            float
+        ] = 0.03  # nonradiative generation percentage, p.g. 7, DOI: 10.1021/acsphotonics.9b00679
+
+        power_received = (
+            const.si.e
+            * voltage
+            * (1 / (1 - eta))
+            * self.get_photon_flux_emitted_from_semiconductor(
+                T=t_sky, Delta_mu=0 * u.eV
+            )
+        )
+        power_from_emission = (
+            const.si.e
+            * voltage
+            * self.get_photon_flux_emitted_from_semiconductor(
+                T=t_cell, Delta_mu=chemical_potential_driving_emission
+            )
+        )
+
+        return power_received - power_from_emission
