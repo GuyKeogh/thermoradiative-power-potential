@@ -18,7 +18,7 @@ class CopernicusClimateData:
             "skt",
             "d2m",
             "tcc",
-            "strd",
+            #"strd",
             "t2m",
             "cbh",
         ]
