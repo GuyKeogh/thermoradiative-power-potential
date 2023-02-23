@@ -19,7 +19,7 @@ class MaximumPowerPointTracker:
     ):
         voltage_to_power_dict: dict[Decimal, u.Quantity] = dict()
         voltage_range: Final[np.ndarray] = np.arange(
-            start=-0.04, stop=-0.01, step=0.001
+            start=-0.035, stop=-0.01, step=0.001
         )
         voltage: float
         for voltage in voltage_range:
@@ -63,12 +63,19 @@ class MaximumPowerPointTracker:
             chemical_potential_driving_emission: Final[u.Quantity] = (
                 voltage.value * u.eV
             )
-            return TotalPowerOutput(E_g=E_g).get_total_power_output(
-                voltage=voltage,
-                t_sky=t_sky,
-                t_cell=t_cell,
-                chemical_potential_driving_emission=chemical_potential_driving_emission,
+            power_output: Final[u.Quantity] = (
+                TotalPowerOutput(E_g=E_g)
+                .get_total_power_output(
+                    voltage=voltage,
+                    t_sky=t_sky,
+                    t_cell=t_cell,
+                    chemical_potential_driving_emission=chemical_potential_driving_emission,
+                )
+                .value
+                * u.watt
             )
+            self.cache[cache_lookup] = power_output
+            return power_output
         else:
             print("Cache hit!")
             return self.cache[cache_lookup]

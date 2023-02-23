@@ -24,6 +24,9 @@ def get_test_power_output():
     power_output = MaximumPowerPointTracker(
         t_cell=t_surf, t_sky=t_sky, E_g=semiconductor_bandgap
     ).get_max_power()
+    power_output = MaximumPowerPointTracker(
+        t_cell=t_surf, t_sky=t_sky, E_g=semiconductor_bandgap
+    ).get_max_power()
     print(
         f"Surface temperature = {t_surf} and sky temperature = {t_sky}.\nPower output = {power_output.value}W"
     )
@@ -43,7 +46,7 @@ def get_power_output_between_dates():
     )
 
     dt_power_dict: dict[datetime, u.Quantity] = dict()
-    semiconductor_bandgap: Final[u.Quantity] = 0.1 * u.electronvolt
+    semiconductor_bandgap: Final[u.Quantity] = 0.17 * u.electronvolt
 
     total_kwh: float = 0.0
     for dt in get_hourly_datetimes_between_period(
@@ -64,8 +67,10 @@ def get_power_output_between_dates():
             f"Produced {power_output} at optimal voltage of {mpp_object.get_optimal_voltage()}"
         )
 
-        total_kwh += power_output.value / 1000
         power_output = power_output.value
+        if power_output > 0:
+            total_kwh += power_output / 1000
+
         dt_power_dict[dt] = power_output
 
         print(
