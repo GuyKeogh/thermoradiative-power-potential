@@ -8,6 +8,7 @@ from astropy import constants as const
 from astropy import units as u
 
 from src.api.copernicus_climate_data import CopernicusClimateData
+from src.calculators.maximum_power_point_tracker import MaximumPowerPointTracker
 from src.calculators.sky_temperature import SkyTemperature
 from src.calculators.total_power_output import TotalPowerOutput
 from src.constants import Characteristics_HgCdZnTe
@@ -16,21 +17,13 @@ from src.plots.power_output import PowerOutputPlot
 
 
 def get_test_power_output():
-    t_surf = 443 * u.Kelvin
+    t_surf = 300 * u.Kelvin
     t_sky = 270 * u.Kelvin
+    semiconductor_bandgap: Final[u.Quantity] = 0.1 * u.electronvolt
 
-    voltage = -0.05 * u.volt
-    chemical_potential_driving_emission = (
-        voltage.value * u.eV
-    )  # https://doi.org/10.1039/D2NR02652J
-
-    power_output = TotalPowerOutput(E_g=0.1 * u.electronvolt).get_total_power_output(
-        voltage=voltage,
-        t_sky=t_sky,
-        t_cell=t_surf,
-        chemical_potential_driving_emission=chemical_potential_driving_emission,
-    )
-
+    power_output = MaximumPowerPointTracker(
+        t_cell=t_surf, t_sky=t_sky, E_g=semiconductor_bandgap
+    ).get_max_power()
     print(
         f"Surface temperature = {t_surf} and sky temperature = {t_sky}.\nPower output = {power_output.value}W"
     )
@@ -50,6 +43,7 @@ def get_power_output_between_dates():
     )
 
     dt_power_dict: dict[datetime, u.Quantity] = dict()
+    semiconductor_bandgap: Final[u.Quantity] = 0.1 * u.electronvolt
 
     total_kwh: float = 0.0
     for dt in get_hourly_datetimes_between_period(
@@ -60,16 +54,14 @@ def get_power_output_between_dates():
             surface_temperature_obj=surface_temperature_obj
         ).get_sky_temperature(date=dt, formula="martin-berdahl")
 
-        voltage: u.Quantity = -0.1 * u.volt
-        chemical_potential_driving_emission: u.Quantity = voltage.value * u.eV
-
-        power_output = TotalPowerOutput(
-            E_g=0.1 * u.electronvolt
-        ).get_total_power_output(
-            voltage=voltage,
+        mpp_object = MaximumPowerPointTracker(
+            E_g=semiconductor_bandgap,
             t_sky=t_sky,
             t_cell=t_surf,
-            chemical_potential_driving_emission=chemical_potential_driving_emission,
+        )
+        power_output = mpp_object.get_max_power()
+        print(
+            f"Produced {power_output} at optimal voltage of {mpp_object.get_optimal_voltage()}"
         )
 
         total_kwh += power_output.value / 1000
@@ -95,24 +87,3 @@ def get_power_output_between_dates():
 if __name__ == "__main__":
     # get_test_power_output()
     get_power_output_between_dates()
-
-    """
-    lat: Final[float] = 53.4
-    lon: Final[float] = -6.3
-
-    start_date: Final[datetime] = datetime(year=2022, month=1, day=1)
-    end_date: Final[datetime] = datetime(year=2022, month=1, day=31)
-    surface_temperature_obj_ireland_jan_2022 = CopernicusClimateData(
-        lon=lon,
-        lat=lat,
-        year=start_date.year,
-        months=[*range(start_date.month, end_date.month + 1)],
-    )
-
-    t_sky: u.Quantity = SkyTemperature(
-        surface_temperature_obj=surface_temperature_obj_ireland_jan_2022
-    ).get_sky_temperature(
-        date=datetime(year=2022, month=1, day=1, hour=3), formula="martin-berdahl"
-    )
-    print(t_sky)
-    """

@@ -99,7 +99,6 @@ class CopernicusClimateData:
                     index_in_dataset = np.where(previous_dataset_date == dataset_dates)[
                         0
                     ][0]
-                    print("aaa")
                 case _:
                     raise ValueError("Case must be boolean", is_data_nested)
 

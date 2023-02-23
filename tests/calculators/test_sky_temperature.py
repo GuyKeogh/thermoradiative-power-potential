@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Final
 
 from astropy import units as u
 
