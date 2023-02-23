@@ -318,10 +318,19 @@ class CopernicusClimateData:
         if variable_shortname in {"tcc", "2t", "t2m", "cbh"}:
             dataset = "reanalysis-era5-single-levels"
 
+        # cloud base height data structure (ends at 18:00 on last day of month) means next month must also be downloaded
         request_arguments: dict[str, str | list[str | int]] = {
             "variable": variable_longname,
-            "year": str(year),
-            "month": str(month),
+            "year": str(year)
+            if variable_shortname != "cbh"
+            else str(year)
+            if month != 12
+            else [str(year), str(year + 1)],
+            "month": str(month)
+            if variable_shortname != "cbh"
+            else [str(month), str(month + 1)]
+            if month != 12
+            else ["12", "1"],
             "day": complete_day_list,
             "time": complete_time_list,
             "format": "grib",
