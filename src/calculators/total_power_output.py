@@ -40,9 +40,6 @@ class TotalPowerOutput:
             )[0]
             * E_unit
         )
-
-        # integration_results_df = pd.DataFrame.from_dict(data=self.integration_results_dict, orient="index", columns=["E", "integration_result"])
-        # integration_results_df.to_csv("integration_results.csv")
         return term_1 * term_2
 
     def _get_term_in_photon_flux_integration(

@@ -10,11 +10,15 @@ from src.exceptions import UnitError
 
 
 class SkyTemperature:
-    def __init__(self, surface_temperature_obj: CopernicusClimateData):
+    def __init__(
+        self, surface_temperature_obj: CopernicusClimateData, lat: float, lon: float
+    ):
         """https://doi.org/10.3390/app10228057"""
         self.surface_temperature_obj: Final[
             CopernicusClimateData
         ] = surface_temperature_obj
+        self.lat: Final[float] = lat
+        self.lon: Final[float] = lon
 
     def get_sky_temperature(
         self,
@@ -64,7 +68,7 @@ class SkyTemperature:
                         fractional_sky_cover * cloud_emissivity * cloud_amount
                     )
 
-                    emissivity_sky: Final[float] = (
+                    emissivity_sky: float = (
                         emissivity_clearsky
                         + (1 - emissivity_clearsky) * infrared_cloud_amount
                     )
@@ -93,7 +97,10 @@ class SkyTemperature:
                     horizontal_net_infrared_radiation_downwards / const.sigma_sb
                 ) ** (1 / 4)
             case "swinbank":
-                """Swinbank's formula, assuming use during the night. (0020-0891, Infrared Phys Vol. 29 No. 2-4 pp. 231-232, 1989), https://www.researchgate.net/publication/243615948_The_sky_temperature_in_net_radiant_heat_loss_calculations_from_low-sloped_roofs"""
+                """Swinbank's formula, assuming use during the night.
+                (0020-0891, Infrared Phys Vol. 29 No. 2-4 pp. 231-232, 1989),
+                243615948_The_sky_temperature_in_net_radiant_heat_loss_calculations_from_low-sloped_roofs
+                """
                 return (
                     0.0553 * t_ambient.value**1.5
                 ) * u.Kelvin  # DOI: 10.1016/0020-0891(89)90055-9
@@ -103,16 +110,20 @@ class SkyTemperature:
                 )
 
     def _get_2m_temperature(self, date: datetime) -> u.Quantity:
-        return self.surface_temperature_obj.get_2m_temperature(date=date)
+        return self.surface_temperature_obj.get_2m_temperature(
+            date=date, lat=self.lat, lon=self.lon
+        )
 
     def _get_cloud_base_height(self, date: datetime) -> u.Quantity:
-        return self.surface_temperature_obj.get_cloud_base_height(date=date)
+        return self.surface_temperature_obj.get_cloud_base_height(
+            date=date, lat=self.lat, lon=self.lon
+        )
 
     def _get_horizontal_net_infrared_radiation_downwards_per_second(
         self, date: datetime
     ) -> u.Quantity:
         return self.surface_temperature_obj.get_downwards_thermal_radiation(
-            date=date, convert_to_watts=True
+            date=date, convert_to_watts=True, lat=self.lat, lon=self.lon
         )
 
     def _get_sky_emissivity(self, date: datetime) -> float:
@@ -136,14 +147,16 @@ class SkyTemperature:
 
         if emissivity < 0 or emissivity > 1:
             raise ValueError(
-                f"Emissivity must be less than 1 and greater than 0", emissivity
+                "Emissivity must be less than 1 and greater than 0", emissivity
             )
         return emissivity
 
     def _get_opaque_sky_cover(self, date: datetime) -> float:
         """opaque sky cover (tenths)"""
         sky_cover: Final[int] = round(
-            self.surface_temperature_obj.get_total_cloud_cover(date=date)
+            self.surface_temperature_obj.get_total_cloud_cover(
+                date=date, lat=self.lat, lon=self.lon
+            )
         )
 
         if sky_cover < 0 or sky_cover > 1:
@@ -159,12 +172,12 @@ class SkyTemperature:
             case "hour":
                 return (
                     self.surface_temperature_obj.get_2metre_dewpoint_temperature_hourly(
-                        date=date
+                        date=date, lat=self.lat, lon=self.lon
                     )
                 )
             case "month":
                 return self.surface_temperature_obj.get_2metre_dewpoint_temperature_monthly_average(
-                    date=date
+                    date=date, lat=self.lat, lon=self.lon
                 )
             case _:
                 raise ValueError("Unknown period", period)

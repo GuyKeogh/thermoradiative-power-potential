@@ -1,13 +1,12 @@
 import json
 import os
 from datetime import datetime
-
-# df = pd.DataFrame(data=[[53.5, -6.5, 400]], columns=["lat", "lon", "value"])
 from glob import glob
 from typing import Final
 
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.io as pio
 
 
 class CreateChoroplethMap:
@@ -24,10 +23,12 @@ class CreateChoroplethMap:
         folderpaths = glob(os.path.join(input_dir, "*"))
 
         index: int = 0
-        data_dict: dict[int, list[float, float, float]] = dict()
+        data_dict: dict[int, tuple[float, float, float]] = dict()
         for folderpath in folderpaths:
             long_lat_folder_name = os.path.basename(folderpath)
-            lat, lon = long_lat_folder_name.split("_", 1)
+            lat_str, lon_str = long_lat_folder_name.split("_", 1)
+            lat: float = float(lat_str)
+            lon: float = float(lon_str)
 
             output_dir: str = os.path.abspath(
                 f"data/out/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"
@@ -37,7 +38,7 @@ class CreateChoroplethMap:
                 with open(filepath, "r") as infile:
                     data = json.load(infile)
                     total_kwh: float = data["total_kwh_per_square_m"]
-                    data_dict[index] = [lat, lon, total_kwh]
+                    data_dict[index] = (lat, lon, total_kwh)
             except FileNotFoundError:
                 print(f"Couldn't find file {filepath}")
                 pass
@@ -71,13 +72,14 @@ class CreateChoroplethMap:
                     ),
                     cmin=0,
                     cmax=df["value"].max(),
-                    colorbar_title="Power Output (kWh)",
+                    colorbar_title="Total Power Output (kWh/m<sup>3</sup>)",
                 ),
             )
         )
 
         fig.update_layout(
-            title="Potential Power Output by Location (kWh) in January 2023 for InSb semiconductor (Eg=0.17eV)",
+            title="Thermoradiative Power Potential by Location (kWh/m<sup>3</sup>) in January 2023 for "
+            "InSb semiconductor (Eg=0.17eV)",
             geo=dict(
                 scope="world",
                 showland=True,
@@ -91,44 +93,10 @@ class CreateChoroplethMap:
 
         fig.show()
 
-        """
-        
-        def create_feature_dict(lon: float, lat: float) -> dict:
-            lon_start = math.floor(lon)
-            lon_end = math.ceil(lon)
-            lat_start = math.floor(lat)
-            lat_end = math.ceil(lat)
-            return {"type": "Feature",
-                    "id": 1,
-                    "geometry": {"type": "Polygon", "coordinates": [[lon_start, lat_start], [lon_end, lat_start], [lon_start, lat_end], [lon_end, lat_end]]}}
-        
-        counties = {
-            "type": "FeatureCollection",
-            "features": [create_feature_dict(lon=-6.5, lat=53.5), create_feature_dict(lon=1.5, lat=3.5)]
-        }
-        
-        fig = px.choropleth(df, geojson=counties, locations='fips', color='value',
-                                   color_continuous_scale="Viridis",
-                                   range_color=(0, 500),
-                                   scope="world",
-                                   labels={'unemp':'unemployment rate'},
-                                   projection="EPSG3857"
-                                  )
-        
-        fig.show()
-        
-        import pandas as pd
-        df = pd.read_csv("https://raw.githubusercontent.com/plotly/datasets/master/fips-unemp-16.csv",
-                           dtype={"fips": str})
-        
-        import plotly.express as px
-        
-        fig = px.choropleth(df, geojson=counties, locations='fips', color='unemp',
-                                   color_continuous_scale="Viridis",
-                           range_color=(0, 12),
-                           scope="usa",
-                           labels={'unemp':'unemployment rate'}
-                          )
-fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-fig.show()
-"""
+        layout = go.Layout(
+            autosize=False,
+            width=2000,
+        )
+        fig = go.Figure(data=data, layout=layout)
+        pio.write_image(fig, "assessment_map.png")
+        # fig.write_image("assessment_map.png")

@@ -14,6 +14,7 @@ def surface_temperature_obj_ireland_jan_2022() -> CopernicusClimateData:
     start_date: Final[datetime] = datetime(2022, 1, 1)
     end_date: Final[datetime] = datetime(2022, 1, 31)
     return CopernicusClimateData(
+        if_load_entire_earth=False,
         lon=lon,
         lat=lat,
         year=start_date.year,

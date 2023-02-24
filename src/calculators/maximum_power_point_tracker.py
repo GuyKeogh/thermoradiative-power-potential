@@ -9,7 +9,9 @@ from src.calculators.total_power_output import TotalPowerOutput
 
 
 class MaximumPowerPointTracker:
-    cache: dict[tuple[u.Quantity, u.Quantity, u.Quantity, u.Quantity]] = dict()
+    cache: dict[
+        tuple[u.Quantity, u.Quantity, u.Quantity, u.Quantity], u.Quantity
+    ] = dict()
 
     def __init__(
         self,
@@ -36,6 +38,9 @@ class MaximumPowerPointTracker:
         self.voltage_to_power_dict: Final[
             dict[Decimal, u.Quantity]
         ] = voltage_to_power_dict
+        self.voltage_with_max_power: Final[Decimal] = max(
+            voltage_to_power_dict, key=lambda key: voltage_to_power_dict[key]
+        )
 
     @classmethod
     @lru_cache(maxsize=None)
@@ -77,9 +82,9 @@ class MaximumPowerPointTracker:
             return self.cache[cache_lookup]
 
     def get_max_power(self) -> u.Quantity:
-        return max(self.voltage_to_power_dict.values()).value * (u.watt / u.meter**2)
+        return self.voltage_to_power_dict[self.voltage_with_max_power].value * (
+            u.watt / u.meter**2
+        )
 
     def get_optimal_voltage(self) -> u.Quantity:
-        return (
-            max(self.voltage_to_power_dict, key=self.voltage_to_power_dict.get) * u.volt
-        )
+        return self.voltage_with_max_power * u.volt

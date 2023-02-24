@@ -1,6 +1,7 @@
 import math
 import os
 import pathlib
+import warnings
 from datetime import datetime
 from typing import Final, Literal
 
@@ -11,8 +12,36 @@ from astropy import units as u
 
 
 class CopernicusClimateData:
-    def __init__(self, lon: float, lat: float, year: int, months: list[int]):
+    def __init__(
+        self,
+        if_load_entire_earth: bool,
+        year: int,
+        months: list[int],
+        lon: float | None = None,
+        lat: float | None = None,
+    ):
         self.c: Final[cdsapi.Client] = cdsapi.Client()
+
+        if if_load_entire_earth:
+            if lat is not None or lon is not None:
+                warnings.warn(
+                    "Latitude and longitude are provided but will not be honoured"
+                )
+
+            lon_min: int = -180
+            lon_max: int = 180
+            lat_min: int = -90
+            lat_max: int = 90
+        else:
+            if lat is None or lon is None:
+                raise ValueError(
+                    "When not loading data for all of Earth, the latitude and longitude must be provided"
+                )
+
+            lon_min = math.floor(lon)
+            lon_max = math.ceil(lon)
+            lat_min = math.floor(lat)
+            lat_max = math.ceil(lat)
 
         required_dataset_shortnames: Final[list[str]] = [
             "skt",
@@ -23,15 +52,7 @@ class CopernicusClimateData:
             "cbh",
         ]
 
-        self.lon: Final[float] = lon
-        self.lat: Final[float] = lat
-
-        lon_min: Final[int] = math.floor(lon)
-        lon_max: Final[int] = math.ceil(lon)
-        lat_min: Final[int] = math.floor(lat)
-        lat_max: Final[int] = math.ceil(lat)
-
-        self.temperature_datasets: [tuple[int, str], xr.Dataset] = dict()
+        self.temperature_datasets: dict[tuple[int, str], xr.Dataset] = dict()
         month: int
         iterator = [(f, s) for f in months for s in required_dataset_shortnames]
         for month, dataset_shortname in iterator:
@@ -63,13 +84,16 @@ class CopernicusClimateData:
             temperature_dataset: xr.Dataset = xr.open_dataset(filepath, engine="cfgrib")
             self.temperature_datasets[(month, dataset_shortname)] = temperature_dataset
 
-    def get_value_from_dataset(self, dataset_shortname: str, date: datetime) -> float:
+    def get_value_from_dataset(
+        self, lat: float, lon: float, dataset_shortname: str, date: datetime
+    ) -> float:
         is_data_nested = True if dataset_shortname in {"cbh"} else False
 
         hour_str = str(date.hour) if date.hour >= 10 else f"0{date.hour}"
         day_str = str(date.day) if date.day >= 10 else f"0{date.day}"
         month_str = str(date.month) if date.month >= 10 else f"0{date.month}"
 
+        print(f"getting sky temp at lat:{lat}, lon:{lon} at {date}")
         try:
             index_in_dataset: int
             index_difference: int | None = None
@@ -79,7 +103,7 @@ class CopernicusClimateData:
                 case True:
                     dataset_dates: Final[np.ndarray] = (
                         self.temperature_datasets[(date.month, dataset_shortname)]
-                        .sel(latitude=self.lat, longitude=self.lon, method="nearest")
+                        .sel(latitude=lat, longitude=lon, method="nearest")
                         .coords["time"]
                         .values
                     )
@@ -111,11 +135,11 @@ class CopernicusClimateData:
                     self.temperature_datasets[(date.month, dataset_shortname)][
                         dataset_shortname
                     ]
-                    .sel(latitude=self.lat, longitude=self.lon, method="nearest")
+                    .sel(latitude=lat, longitude=lon, method="nearest")
                     .values[index_in_dataset][index_difference]
                 )
             elif self.temperature_datasets[(date.month, dataset_shortname)].sel(
-                latitude=self.lat, longitude=self.lon, method="nearest"
+                latitude=lat, longitude=lon, method="nearest"
             ).coords["time"][index_in_dataset] == np.datetime64(
                 f"{date.year}-{month_str}-{day_str}T{hour_str}:00"
             ):
@@ -123,7 +147,7 @@ class CopernicusClimateData:
                     self.temperature_datasets[(date.month, dataset_shortname)][
                         dataset_shortname
                     ]
-                    .sel(latitude=self.lat, longitude=self.lon, method="nearest")
+                    .sel(latitude=lat, longitude=lon, method="nearest")
                     .values[index_in_dataset]
                 )
             else:
@@ -134,7 +158,7 @@ class CopernicusClimateData:
         except IndexError as e:
             # data possibly given daily with steps
             if self.temperature_datasets[(date.month, dataset_shortname)].sel(
-                latitude=self.lat, longitude=self.lon, method="nearest"
+                latitude=lat, longitude=lon, method="nearest"
             ).coords["time"][date.day] == np.datetime64(
                 f"{date.year}-{month_str}-{day_str}T00:00"
             ):
@@ -142,14 +166,19 @@ class CopernicusClimateData:
                     self.temperature_datasets[(date.month, dataset_shortname)][
                         dataset_shortname
                     ]
-                    .sel(latitude=self.lat, longitude=self.lon, method="nearest")
+                    .sel(latitude=lat, longitude=lon, method="nearest")
                     .values[date.day][date.hour]
                 )
             else:
                 raise ValueError("Date does not correspond to expected") from e
 
     def get_average_value_from_dataset(
-        self, dataset_shortname: str, date: datetime, period: Literal["month"]
+        self,
+        dataset_shortname: str,
+        lat: float,
+        lon: float,
+        date: datetime,
+        period: Literal["month"],
     ) -> float:
         match period:
             case "month":
@@ -158,7 +187,7 @@ class CopernicusClimateData:
                         self.temperature_datasets[(date.month, dataset_shortname)][
                             dataset_shortname
                         ]
-                        .sel(latitude=self.lat, longitude=self.lon, method="nearest")
+                        .sel(latitude=lat, longitude=lon, method="nearest")
                         .values
                     )
                 )
@@ -166,49 +195,71 @@ class CopernicusClimateData:
             case _:
                 raise ValueError("Unknown period", period)
 
-    def get_2m_temperature(self, date: datetime) -> u.Quantity:
+    def get_2m_temperature(self, lat: float, lon: float, date: datetime) -> u.Quantity:
         return (
-            self.get_value_from_dataset(dataset_shortname="t2m", date=date) * u.Kelvin
+            self.get_value_from_dataset(
+                dataset_shortname="t2m", date=date, lat=lat, lon=lon
+            )
+            * u.Kelvin
         )
 
-    def get_cloud_base_height(self, date: datetime) -> u.Quantity:
-        return self.get_value_from_dataset(dataset_shortname="cbh", date=date) * u.meter
-
-    def get_surface_temperature(self, date: datetime) -> u.Quantity:
+    def get_cloud_base_height(
+        self, lat: float, lon: float, date: datetime
+    ) -> u.Quantity:
         return (
-            self.get_value_from_dataset(dataset_shortname="skt", date=date) * u.Kelvin
+            self.get_value_from_dataset(
+                dataset_shortname="cbh", date=date, lat=lat, lon=lon
+            )
+            * u.meter
+        )
+
+    def get_surface_temperature(
+        self, lat: float, lon: float, date: datetime
+    ) -> u.Quantity:
+        return (
+            self.get_value_from_dataset(
+                dataset_shortname="skt", date=date, lat=lat, lon=lon
+            )
+            * u.Kelvin
         )
 
     def get_downwards_thermal_radiation(
-        self, date: datetime, convert_to_watts: bool = False
+        self, lat: float, lon: float, date: datetime, convert_to_watts: bool = False
     ) -> u.Quantity:
         downwards_thermal_radiation: Final[float] = self.get_value_from_dataset(
-            dataset_shortname="strd", date=date
+            dataset_shortname="strd", date=date, lat=lat, lon=lon
         )
         if convert_to_watts:
             return (downwards_thermal_radiation / (60 * 60)) * (u.watt / u.meter**2)
         return downwards_thermal_radiation * (u.Joule / u.meter**2)
 
-    def get_2metre_dewpoint_temperature_hourly(self, date: datetime) -> u.Quantity:
-        return (
-            self.get_value_from_dataset(dataset_shortname="d2m", date=date) * u.Kelvin
-        )
-
-    def get_2metre_dewpoint_temperature_monthly_average(
-        self, date: datetime
+    def get_2metre_dewpoint_temperature_hourly(
+        self, lat: float, lon: float, date: datetime
     ) -> u.Quantity:
         return (
-            self.get_average_value_from_dataset(
-                dataset_shortname="d2m", date=date, period="month"
+            self.get_value_from_dataset(
+                dataset_shortname="d2m", date=date, lat=lat, lon=lon
             )
             * u.Kelvin
         )
 
-    def get_total_cloud_cover(self, date: datetime) -> float:
-        return self.get_value_from_dataset(dataset_shortname="tcc", date=date)
+    def get_2metre_dewpoint_temperature_monthly_average(
+        self, lat: float, lon: float, date: datetime
+    ) -> u.Quantity:
+        return (
+            self.get_average_value_from_dataset(
+                dataset_shortname="d2m", date=date, period="month", lat=lat, lon=lon
+            )
+            * u.Kelvin
+        )
 
+    def get_total_cloud_cover(self, lat: float, lon: float, date: datetime) -> float:
+        return self.get_value_from_dataset(
+            dataset_shortname="tcc", date=date, lat=lat, lon=lon
+        )
+
+    @staticmethod
     def _generate_filepath(
-        self,
         dataset_shortname: str,
         lon_min: int,
         lon_max: int,
@@ -319,7 +370,7 @@ class CopernicusClimateData:
             dataset = "reanalysis-era5-single-levels"
 
         # cloud base height data structure (ends at 18:00 on last day of month) means next month must also be downloaded
-        request_arguments: dict[str, str | list[str | int]] = {
+        request_arguments: dict[str, str | list[str] | list[int]] = {
             "variable": variable_longname,
             "year": str(year)
             if variable_shortname != "cbh"
