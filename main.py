@@ -11,6 +11,7 @@ from src.calculators.coordinates_for_assessment import get_coordinates_for_asses
 from src.calculators.maximum_power_point_tracker import MaximumPowerPointTracker
 from src.calculators.sky_temperature import SkyTemperature
 from src.dates import get_hourly_datetimes_between_period
+from src.plots.resource_assessment_choropleth_map import CreateChoroplethMap
 
 
 def get_test_power_output():
@@ -30,12 +31,12 @@ def get_test_power_output():
 
 
 def process_batch() -> None:
-    batch_quantity: Final[int] = 10
+    batch_quantity: Final[int] = 100
     batch_start: Final[int] = 0
     batch_start_plus_quantity: Final[int] = batch_start + batch_quantity
 
-    start_date: Final[datetime] = datetime(2022, 1, 1)
-    end_date: Final[datetime] = datetime(2022, 12, 31)
+    start_date: Final[datetime] = datetime(2023, 1, 1)
+    end_date: Final[datetime] = datetime(2023, 1, 31)
 
     coordinates_for_assessment: Final[
         list[tuple[float, float]]
@@ -122,4 +123,6 @@ def save_power_output_between_dates(
 if __name__ == "__main__":
     # get_test_power_output()
     # save_power_output_between_dates()
-    process_batch()
+    # process_batch()
+
+    CreateChoroplethMap().create_map()
