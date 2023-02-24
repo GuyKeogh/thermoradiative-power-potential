@@ -533,6 +533,18 @@ pyproj = ">=2.6.1.post1"
 shapely = ">=1.7"
 
 [[package]]
+name = "global-land-mask"
+version = "1.0.0"
+description = "Check whether a lat/lon point in on land or on sea"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "global-land-mask-1.0.0.tar.gz", hash = "sha256:956bf02e8b05bfc9f3a29cbc6e97d5ba4151c0732504acc73c2db9ea325ecff3"},
+    {file = "global_land_mask-1.0.0-py3-none-any.whl", hash = "sha256:07751fbb4e3834ee508a84ea64d9bd5340fbd0a8c951e24b43c323fcc670bb62"},
+]
+
+[[package]]
 name = "idna"
 version = "3.4"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -1318,4 +1330,4 @@ viz = ["matplotlib", "nc-time-axis", "seaborn"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "a0619a8edb3d06c7e032ac01a9d55058120eaab5595981c088cb31af8f834ace"
+content-hash = "66589496fc9834b9a4c10b956dc0dc01afd14242f2c78f0d8589e4fcaf7ccbe6"

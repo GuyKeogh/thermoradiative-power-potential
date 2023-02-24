@@ -33,8 +33,6 @@ class MaximumPowerPointTracker:
                 t_sky=t_sky,
             )
 
-            print(self._calculate_power_output_for_voltage.cache_info())
-
         self.voltage_to_power_dict: Final[
             dict[Decimal, u.Quantity]
         ] = voltage_to_power_dict
@@ -59,7 +57,6 @@ class MaximumPowerPointTracker:
             t_cell,
         )
         if cache_lookup not in self.cache:
-            print("Miss!")
             chemical_potential_driving_emission: Final[u.Quantity] = (
                 voltage.value * u.eV
             )
@@ -77,7 +74,6 @@ class MaximumPowerPointTracker:
             self.cache[cache_lookup] = power_output
             return power_output
         else:
-            print("Cache hit!")
             return self.cache[cache_lookup]
 
     def get_max_power(self) -> u.Quantity:

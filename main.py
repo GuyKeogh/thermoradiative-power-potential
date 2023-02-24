@@ -1,19 +1,16 @@
+import json
+import os.path
 from datetime import datetime, timedelta
 from typing import Final
 
 import pandas as pd
-
-# from src.calculators.electric_potential import get_semiconductor_electric_potential
-from astropy import constants as const
 from astropy import units as u
 
 from src.api.copernicus_climate_data import CopernicusClimateData
+from src.calculators.coordinates_for_assessment import get_coordinates_for_assessment
 from src.calculators.maximum_power_point_tracker import MaximumPowerPointTracker
 from src.calculators.sky_temperature import SkyTemperature
-from src.calculators.total_power_output import TotalPowerOutput
-from src.constants import Characteristics_HgCdZnTe
 from src.dates import get_hourly_datetimes_between_period
-from src.plots.power_output import PowerOutputPlot
 
 
 def get_test_power_output():
@@ -32,12 +29,40 @@ def get_test_power_output():
     )
 
 
-def get_power_output_between_dates():
-    lat = 53.3608909
-    lon = -6.3061867
+def process_batch() -> None:
+    batch_quantity: Final[int] = 10
+    batch_start: Final[int] = 0
+    batch_start_plus_quantity: Final[int] = batch_start + batch_quantity
 
     start_date: Final[datetime] = datetime(2022, 1, 1)
-    end_date: Final[datetime] = datetime(2022, 1, 31)
+    end_date: Final[datetime] = datetime(2022, 12, 31)
+
+    coordinates_for_assessment: Final[
+        list[tuple[float, float]]
+    ] = get_coordinates_for_assessment()
+
+    batch_end = (
+        batch_start_plus_quantity
+        if batch_start_plus_quantity <= len(coordinates_for_assessment)
+        else len(coordinates_for_assessment)
+    )
+    for lon, lat in coordinates_for_assessment[batch_start:batch_end]:
+        print(f"Processing co-ordinate lon:{lon}, lat:{lat}")
+        save_power_output_between_dates(
+            lon=lon, lat=lat, start_date=start_date, end_date=end_date
+        )
+
+
+def save_power_output_between_dates(
+    lon: float, lat: float, start_date: datetime, end_date: datetime
+):
+    # lat = 53.5
+    # lon = -6.5
+    output_dir: Final[str] = os.path.abspath(
+        f"data/out/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"
+    )
+    os.makedirs(output_dir, exist_ok=True)
+
     surface_temperature_obj: Final[CopernicusClimateData] = CopernicusClimateData(
         lon=lon,
         lat=lat,
@@ -78,11 +103,16 @@ def get_power_output_between_dates():
         )
 
     dt_power_df: Final[pd.DataFrame] = pd.DataFrame.from_dict(
-        data=dt_power_dict, orient="index", columns=["power"]
+        data=dt_power_dict, orient="index", columns=["average_power_watts"]
     )
+    dt_power_df.to_csv(os.path.join(output_dir, "power_output_per_dt.csv"))
+    with open(os.path.join(output_dir, "json_data.json"), "w") as outfile:
+        json.dump({"total_kwh_per_square_m": total_kwh}, outfile)
+    """
     PowerOutputPlot().plot_output_vs_datetime(
         datetimes=dt_power_df.index, power_output=dt_power_df.power
     )
+    """
 
     print(
         f"total kwh between {start_date} and {end_date + timedelta(hours=23)}: {total_kwh} kWh"
@@ -91,4 +121,5 @@ def get_power_output_between_dates():
 
 if __name__ == "__main__":
     # get_test_power_output()
-    get_power_output_between_dates()
+    # save_power_output_between_dates()
+    process_batch()
