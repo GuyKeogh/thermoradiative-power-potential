@@ -46,7 +46,7 @@ if __name__ == "__main__":
             print(f"Processing from {args.batch_start}")
             process_batch(
                 batch_start=args.batch_start,
-                batch_quantity=100,
+                batch_quantity=None,
                 start_date=start_date,
                 end_date=end_date,
             )

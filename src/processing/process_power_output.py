@@ -49,18 +49,21 @@ def process_batch(
     start_date: datetime,
     end_date: datetime,
     batch_start: int,
-    batch_quantity: int,
+    batch_quantity: int | None,
 ) -> None:
-    batch_start_plus_quantity: Final[int] = batch_start + batch_quantity
-
     coordinates_for_assessment: Final[
         list[tuple[float, float]]
     ] = get_coordinates_for_assessment()
 
-    batch_end = (
-        batch_start_plus_quantity
-        if batch_start_plus_quantity <= len(coordinates_for_assessment)
-        else len(coordinates_for_assessment)
+    if batch_quantity is None:
+        batch_end = len(coordinates_for_assessment)
+    else:
+        batch_start_plus_quantity: Final[int] = batch_start + batch_quantity
+
+        batch_end = (
+            batch_start_plus_quantity
+            if batch_start_plus_quantity <= len(coordinates_for_assessment)
+            else len(coordinates_for_assessment)
     )
     for lon, lat in coordinates_for_assessment[batch_start:batch_end]:
         print(f"Processing co-ordinate lon:{lon}, lat:{lat}")
