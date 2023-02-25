@@ -9,6 +9,7 @@ import cdsapi
 import numpy as np
 import xarray as xr
 from astropy import units as u
+from xarray import DataArray
 
 
 class CopernicusClimateData:
@@ -82,6 +83,7 @@ class CopernicusClimateData:
                     month=month,
                 )
             temperature_dataset: xr.Dataset = xr.open_dataset(filepath, engine="cfgrib")
+            temperature_dataset.load()
             self.temperature_datasets[(month, dataset_shortname)] = temperature_dataset
 
     def get_value_from_dataset(
@@ -93,7 +95,6 @@ class CopernicusClimateData:
         day_str = str(date.day) if date.day >= 10 else f"0{date.day}"
         month_str = str(date.month) if date.month >= 10 else f"0{date.month}"
 
-        print(f"getting sky temp at lat:{lat}, lon:{lon} at {date}")
         try:
             index_in_dataset: int
             index_difference: int | None = None
@@ -143,12 +144,12 @@ class CopernicusClimateData:
             ).coords["time"][index_in_dataset] == np.datetime64(
                 f"{date.year}-{month_str}-{day_str}T{hour_str}:00"
             ):
-                return (
+                return float(
                     self.temperature_datasets[(date.month, dataset_shortname)][
                         dataset_shortname
+                    ].sel(latitude=lat, longitude=lon, method="nearest")[
+                        index_in_dataset
                     ]
-                    .sel(latitude=lat, longitude=lon, method="nearest")
-                    .values[index_in_dataset]
                 )
             else:
                 raise ValueError(
@@ -162,12 +163,12 @@ class CopernicusClimateData:
             ).coords["time"][date.day] == np.datetime64(
                 f"{date.year}-{month_str}-{day_str}T00:00"
             ):
-                return (
+                return float(
                     self.temperature_datasets[(date.month, dataset_shortname)][
                         dataset_shortname
+                    ].sel(latitude=lat, longitude=lon, method="nearest")[date.day][
+                        date.hour
                     ]
-                    .sel(latitude=lat, longitude=lon, method="nearest")
-                    .values[date.day][date.hour]
                 )
             else:
                 raise ValueError("Date does not correspond to expected") from e
@@ -182,14 +183,11 @@ class CopernicusClimateData:
     ) -> float:
         match period:
             case "month":
+                selected_data: Final[DataArray] = self.temperature_datasets[
+                    (date.month, dataset_shortname)
+                ][dataset_shortname].sel(latitude=lat, longitude=lon, method="nearest")
                 result: Final[float] = float(
-                    np.nanmean(
-                        self.temperature_datasets[(date.month, dataset_shortname)][
-                            dataset_shortname
-                        ]
-                        .sel(latitude=lat, longitude=lon, method="nearest")
-                        .values
-                    )
+                    selected_data.mean(dim=["time", "step"], skipna=True)
                 )
                 return result
             case _:
