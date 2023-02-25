@@ -3,12 +3,14 @@ import os
 from datetime import datetime, timedelta
 from typing import Final
 
+import numpy as np
 import pandas as pd
 from astropy import units as u
 
 from src.calculators.maximum_power_point_tracker import MaximumPowerPointTracker
 from src.calculators.sky_temperature import SkyTemperature
 from src.dates import get_hourly_datetimes_between_period
+from src.exceptions import InsufficientClimateDataError
 
 
 def save_power_output_between_dates(
@@ -34,6 +36,11 @@ def save_power_output_between_dates(
         t_sky: u.Quantity = SkyTemperature(
             surface_temperature_obj=climate_data_obj, lat=lat, lon=lon
         ).get_sky_temperature(date=dt, formula="martin-berdahl")
+
+        if np.isnan(t_surf) or np.isnan(t_sky):
+            raise InsufficientClimateDataError(
+                "Neither t_surf or t_sky may be np.NaN", t_surf, t_sky
+            )
 
         mpp_object = MaximumPowerPointTracker(
             E_g=semiconductor_bandgap,

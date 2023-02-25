@@ -1,3 +1,4 @@
+import warnings
 from datetime import datetime
 from typing import Final
 
@@ -6,6 +7,7 @@ from astropy import units as u
 from src.api.copernicus_climate_data import CopernicusClimateData
 from src.calculators.coordinates_for_assessment import get_coordinates_for_assessment
 from src.calculators.maximum_power_point_tracker import MaximumPowerPointTracker
+from src.exceptions import InsufficientClimateDataError
 from src.processing.save_output_between_dates import save_power_output_between_dates
 
 
@@ -75,10 +77,13 @@ def process_batch(
             months=[*range(start_date.month, end_date.month + 1)],
         )
 
-        save_power_output_between_dates(
-            climate_data_obj=climate_data_obj,
-            lon=lon,
-            lat=lat,
-            start_date=start_date,
-            end_date=end_date,
-        )
+        try:
+            save_power_output_between_dates(
+                climate_data_obj=climate_data_obj,
+                lon=lon,
+                lat=lat,
+                start_date=start_date,
+                end_date=end_date,
+            )
+        except InsufficientClimateDataError as e:
+            warnings.warn(f"{e}. Skipping lat: {lat}, lon: {lon}.")
