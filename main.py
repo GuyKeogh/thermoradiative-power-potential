@@ -18,7 +18,7 @@ parser.add_argument(
 parser.add_argument(
     "--skip_worldmap",
     help="If passed, the application will not create worldmap with saved datapoints overlaid. "
-    "Example usage: `python main.py --plot_worldmap`",
+    "Example usage: `python main.py --skip_worldmap`",
     action="store_true",
     required=False,
 )
