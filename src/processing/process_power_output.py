@@ -64,7 +64,7 @@ def process_batch(
             batch_start_plus_quantity
             if batch_start_plus_quantity <= len(coordinates_for_assessment)
             else len(coordinates_for_assessment)
-    )
+        )
     for lon, lat in coordinates_for_assessment[batch_start:batch_end]:
         print(f"Processing co-ordinate lon:{lon}, lat:{lat}")
         climate_data_obj: CopernicusClimateData = CopernicusClimateData(

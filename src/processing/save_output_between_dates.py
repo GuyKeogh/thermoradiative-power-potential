@@ -14,14 +14,14 @@ from src.dates import get_hourly_datetimes_between_period
 def save_power_output_between_dates(
     climate_data_obj, lon: float, lat: float, start_date: datetime, end_date: datetime
 ):
-    # lat = 53.5
-    # lon = -6.5
     output_dir: Final[str] = os.path.abspath(
         f"data/out/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"
     )
     os.makedirs(output_dir, exist_ok=True)
 
-    dt_power_dict: dict[datetime, u.Quantity] = dict()
+    dt_data_dict: dict[
+        datetime, tuple[u.Quantity, u.Quantity, u.Quantity, u.Quantity]
+    ] = dict()
     semiconductor_bandgap: Final[u.Quantity] = 0.17 * u.electronvolt
 
     total_kwh: float = 0.0
@@ -41,6 +41,7 @@ def save_power_output_between_dates(
             t_cell=t_surf,
         )
         power_output = mpp_object.get_max_power()
+        optimal_voltage = mpp_object.get_optimal_voltage()
         print(
             f"Produced {power_output} at optimal voltage of {mpp_object.get_optimal_voltage()}"
         )
@@ -49,16 +50,18 @@ def save_power_output_between_dates(
         if power_output > 0:
             total_kwh += power_output / 1000
 
-        dt_power_dict[dt] = power_output
+        dt_data_dict[dt] = (power_output, optimal_voltage, t_sky, t_surf)
 
         print(
             f"For {dt}, surface temperature = {t_surf} and sky temperature = {t_sky}.\nPower output = {power_output}W"
         )
 
     dt_power_df: Final[pd.DataFrame] = pd.DataFrame.from_dict(
-        data=dt_power_dict, orient="index", columns=["average_power_watts"]
+        data=dt_data_dict,
+        orient="index",
+        columns=["average_power_watts_per_sqm", "optimal_voltage", "t_sky", "t_surf"],
     )
-    dt_power_df.to_csv(os.path.join(output_dir, "power_output_per_dt.csv"))
+    dt_power_df.to_csv(os.path.join(output_dir, "data_per_dt.csv"))
     with open(os.path.join(output_dir, "json_data.json"), "w") as outfile:
         json.dump({"total_kwh_per_square_m": total_kwh}, outfile)
 
