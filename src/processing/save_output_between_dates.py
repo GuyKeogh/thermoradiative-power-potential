@@ -39,7 +39,7 @@ def save_power_output_between_dates(
 
         if np.isnan(t_surf) or np.isnan(t_sky):
             raise InsufficientClimateDataError(
-                "Neither t_surf or t_sky may be np.NaN", t_surf, t_sky
+                "Neither t_surf or t_sky may be NaN", t_surf, t_sky
             )
 
         mpp_object = MaximumPowerPointTracker(
