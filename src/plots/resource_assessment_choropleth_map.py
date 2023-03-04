@@ -2,23 +2,27 @@ import json
 import os
 from datetime import datetime
 from glob import glob
-from typing import Final
+from typing import Final, Literal
 
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
+
+pio.kaleido.scope.mathjax = None
 
 
 class CreateChoroplethMap:
     def __init__(self):
         pass
 
-    def create_map(self) -> None:
+    def create_map(
+        self, emissivity_method: Literal["swinbank", "cloudy_sky", "martin-berdahl"]
+    ) -> None:
         start_date: Final[datetime] = datetime(2023, 1, 1)
         end_date: Final[datetime] = datetime(2023, 1, 31)
 
         input_dir: Final[str] = os.path.abspath(
-            f"data/out/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/"
+            f"data/out/{emissivity_method}/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/"
         )
         folderpaths = glob(os.path.join(input_dir, "*"))
 
@@ -31,7 +35,7 @@ class CreateChoroplethMap:
             lon: float = float(lon_str)
 
             output_dir: str = os.path.abspath(
-                f"data/out/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"
+                f"data/out/{emissivity_method}/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"
             )
             filepath: str = os.path.join(output_dir, "json_data.json")
             try:
@@ -78,8 +82,8 @@ class CreateChoroplethMap:
         )
 
         fig.update_layout(
-            title="Thermoradiative Power Potential by Location (kWh/m<sup>3</sup>) in January 2023 for "
-            "InSb semiconductor (Eg=0.17eV)",
+            # title="Thermoradiative Power Potential by Location (kWh/m<sup>3</sup>) in January 2023 for "
+            # f"InSb semiconductor (Eg=0.17eV) with {emissivity_method} sky emissivity determination method",
             geo=dict(
                 scope="world",
                 showland=True,
@@ -92,11 +96,10 @@ class CreateChoroplethMap:
         )
 
         fig.show()
-
-        layout = go.Layout(
-            autosize=False,
-            width=2000,
+        fig.update_layout(
+            # autosize=False,
+            width=1000,
         )
-        fig = go.Figure(data=data, layout=layout)
-        pio.write_image(fig, "assessment_map.png")
-        # fig.write_image("assessment_map.png")
+
+        pio.write_image(fig, f"assessment_map_{emissivity_method}.png", format="png")
+        pio.write_image(fig, f"assessment_map_{emissivity_method}.pdf", format="pdf")

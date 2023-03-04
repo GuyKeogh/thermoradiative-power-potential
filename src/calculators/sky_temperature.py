@@ -1,4 +1,3 @@
-import math
 from datetime import datetime
 from typing import Final, Literal
 
@@ -7,7 +6,6 @@ from astropy import units as u
 
 from src.api.copernicus_climate_data import CopernicusClimateData
 from src.calculators.sky_emissivity import SkyEmissivity
-from src.exceptions import UnitError
 
 
 class SkyTemperature:
