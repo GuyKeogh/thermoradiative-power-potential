@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Final, Literal
 
-from astropy import constants as const
 from astropy import units as u
 
 from src.api.copernicus_climate_data import CopernicusClimateData
@@ -22,7 +21,7 @@ class SkyTemperature:
     def get_sky_temperature(
         self,
         date: datetime,
-        formula: Literal["swinbank", "cloudy_sky", "martin-berdahl"],
+        formula: Literal["swinbank", "martin-berdahl"],
     ) -> u.Quantity:
         t_ambient: Final[u.Quantity] = self._get_2m_temperature(date=date)
         match formula:
@@ -36,21 +35,9 @@ class SkyTemperature:
                 ).sky_emissivity
 
                 t_sky: Final[u.Quantity] = (
-                    (sky_emissivity**0.25) * t_ambient * u.Kelvin
-                )
-                return t_sky.value * u.K
-
-            case "cloudy_sky":
-                """https://www.mdpi.com/2076-3417/10/22/8057"""
-                horizontal_net_infrared_radiation_downwards: Final[
-                    u.Quantity
-                ] = self._get_horizontal_net_infrared_radiation_downwards_per_second(
-                    date=date
-                )
-
-                return (
-                    horizontal_net_infrared_radiation_downwards / const.sigma_sb
-                ) ** (1 / 4)
+                    (sky_emissivity**0.25) * t_ambient
+                ).value * u.Kelvin
+                return t_sky
             case "swinbank":
                 """Swinbank's formula, assuming use during the night.
                 (0020-0891, Infrared Phys Vol. 29 No. 2-4 pp. 231-232, 1989),

@@ -4,7 +4,6 @@ from typing import Final, Literal
 
 from src.plots.resource_assessment_choropleth_map import CreateChoroplethMap
 from src.processing.process_power_output import (
-    get_test_power_output_for_set_temperatures,
     process_batch,
     save_test_power_output_for_set_lon_lat,
 )
@@ -34,7 +33,7 @@ parser.add_argument(
     "--emissivity_method",
     help="If passed, sets what method to use to calculate emissivity."
     "Example usage: `python main.py --emissivity_method martin-berdahl`",
-    choices=["swinbank", "cloudy_sky", "martin-berdahl"],
+    choices=["swinbank", "martin-berdahl"],
     nargs=1,
     default=["martin-berdahl"],
 )
@@ -42,9 +41,9 @@ args = parser.parse_args()
 
 
 if __name__ == "__main__":
-    allowed_emissivity_methods = {"swinbank", "cloudy_sky", "martin-berdahl"}
+    allowed_emissivity_methods = {"swinbank", "martin-berdahl"}
     emissivity_method: Final[
-        Literal["swinbank", "cloudy_sky", "martin-berdahl"]
+        Literal["swinbank", "martin-berdahl"]
     ] = args.emissivity_method[0]
     if emissivity_method not in allowed_emissivity_methods:
         raise ValueError("Emissivity method not allowed", emissivity_method)

@@ -53,7 +53,7 @@ def process_batch(
     end_date: datetime,
     batch_start: int,
     batch_quantity: int | None,
-    emissivity_method: Literal["swinbank", "cloudy_sky", "martin-berdahl"],
+    emissivity_method: Literal["swinbank", "martin-berdahl"],
 ) -> None:
     coordinates_for_assessment: Final[
         list[tuple[float, float]]

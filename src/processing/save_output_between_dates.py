@@ -20,7 +20,7 @@ def save_power_output_between_dates(
     lat: float,
     start_date: datetime,
     end_date: datetime,
-    emissivity_method: Literal["swinbank", "cloudy_sky", "martin-berdahl"],
+    emissivity_method: Literal["swinbank", "martin-berdahl"],
 ):
     output_dir: Final[str] = os.path.abspath(
         f"data/out/{emissivity_method}/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"

@@ -16,7 +16,7 @@ class CreateChoroplethMap:
         pass
 
     def create_map(
-        self, emissivity_method: Literal["swinbank", "cloudy_sky", "martin-berdahl"]
+        self, emissivity_method: Literal["swinbank", "martin-berdahl"]
     ) -> None:
         start_date: Final[datetime] = datetime(2023, 1, 1)
         end_date: Final[datetime] = datetime(2023, 1, 31)
