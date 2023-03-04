@@ -1,11 +1,12 @@
 import argparse
 from datetime import datetime
-from typing import Final
+from typing import Final, Literal
 
 from src.plots.resource_assessment_choropleth_map import CreateChoroplethMap
 from src.processing.process_power_output import (
     get_test_power_output_for_set_temperatures,
     process_batch,
+    save_test_power_output_for_set_lon_lat,
 )
 
 parser = argparse.ArgumentParser(prog="Thermoradiative Power Output Prediction")
@@ -29,10 +30,25 @@ parser.add_argument(
     action="store_true",
     required=False,
 )
+parser.add_argument(
+    "--emissivity_method",
+    help="If passed, sets what method to use to calculate emissivity."
+    "Example usage: `python main.py --emissivity_method martin-berdahl`",
+    choices=["swinbank", "cloudy_sky", "martin-berdahl"],
+    nargs=1,
+    default=["martin-berdahl"],
+)
 args = parser.parse_args()
 
 
 if __name__ == "__main__":
+    allowed_emissivity_methods = {"swinbank", "cloudy_sky", "martin-berdahl"}
+    emissivity_method: Final[
+        Literal["swinbank", "cloudy_sky", "martin-berdahl"]
+    ] = args.emissivity_method[0]
+    if emissivity_method not in allowed_emissivity_methods:
+        raise ValueError("Emissivity method not allowed", emissivity_method)
+
     if not args.skip_predict:
         start_date: Final[datetime] = datetime(2023, 1, 1)
         end_date: Final[datetime] = datetime(2023, 1, 31)
@@ -41,7 +57,8 @@ if __name__ == "__main__":
             print(
                 "Running in demonstration mode. Pass --batch_start to process real data."
             )
-            get_test_power_output_for_set_temperatures()
+            save_test_power_output_for_set_lon_lat()
+
         else:
             print(f"Processing from {args.batch_start}")
             process_batch(
@@ -49,7 +66,8 @@ if __name__ == "__main__":
                 batch_quantity=None,
                 start_date=start_date,
                 end_date=end_date,
+                emissivity_method=emissivity_method,
             )
 
     if not args.skip_worldmap:
-        CreateChoroplethMap().create_map()
+        CreateChoroplethMap().create_map(emissivity_method=emissivity_method)
