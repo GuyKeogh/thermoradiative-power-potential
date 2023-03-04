@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import Final, Literal
 
 import cdsapi
-import numpy as np
 import pandas as pd
 import xarray as xr
 from astropy import units as u
@@ -73,7 +72,7 @@ class CopernicusClimateData:
                 print(f"Already exists at {filepath}!")
             else:
                 print("File doesn't exist! Downloading...")
-                self._download_surface_temperature_file_for_month_for_region(
+                self._download_dataset_for_month_for_region(
                     filepath=filepath,
                     variable_shortname=dataset_shortname,
                     lon_min=lon_min,
@@ -228,7 +227,7 @@ class CopernicusClimateData:
             "radiative-power-output-prediction/data/",
         )
 
-    def _download_surface_temperature_file_for_month_for_region(
+    def _download_dataset_for_month_for_region(
         self,
         filepath: str,
         variable_shortname: str,
@@ -344,11 +343,13 @@ class CopernicusClimateData:
             request_arguments["product_type"] = "reanalysis"
 
         try:
-            self.c.retrieve(
-                dataset,
-                request_arguments,
-                filepath,
-            )
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message="Unverified HTTPS request")
+                self.c.retrieve(
+                    dataset,
+                    request_arguments,
+                    filepath,
+                )
         except Exception:
             print(request_arguments)
             raise
