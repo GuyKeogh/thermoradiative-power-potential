@@ -1,12 +1,13 @@
 import json
 import os
 from datetime import datetime, timedelta
-from typing import Final
+from typing import Final, Literal
 
 import numpy as np
 import pandas as pd
 from astropy import units as u
 
+from src.api.copernicus_climate_data import CopernicusClimateData
 from src.calculators.maximum_power_point_tracker import MaximumPowerPointTracker
 from src.calculators.sky_temperature import SkyTemperature
 from src.dates import get_hourly_datetimes_between_period
@@ -14,10 +15,15 @@ from src.exceptions import InsufficientClimateDataError
 
 
 def save_power_output_between_dates(
-    climate_data_obj, lon: float, lat: float, start_date: datetime, end_date: datetime
+    climate_data_obj: CopernicusClimateData,
+    lon: float,
+    lat: float,
+    start_date: datetime,
+    end_date: datetime,
+    emissivity_method: Literal["swinbank", "cloudy_sky", "martin-berdahl"],
 ):
     output_dir: Final[str] = os.path.abspath(
-        f"data/out/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"
+        f"data/out/{emissivity_method}/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"
     )
     os.makedirs(output_dir, exist_ok=True)
 
@@ -35,7 +41,7 @@ def save_power_output_between_dates(
         )
         t_sky: u.Quantity = SkyTemperature(
             surface_temperature_obj=climate_data_obj, lat=lat, lon=lon
-        ).get_sky_temperature(date=dt, formula="martin-berdahl")
+        ).get_sky_temperature(date=dt, formula=emissivity_method)
 
         if np.isnan(t_surf) or np.isnan(t_sky):
             raise InsufficientClimateDataError(

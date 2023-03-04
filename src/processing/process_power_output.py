@@ -1,6 +1,6 @@
 import warnings
 from datetime import datetime
-from typing import Final
+from typing import Final, Literal
 
 from astropy import units as u
 
@@ -26,8 +26,8 @@ def get_test_power_output_for_set_temperatures() -> u.Quantity:
 
 
 def save_test_power_output_for_set_lon_lat() -> None:
-    start_date: Final[datetime] = datetime(2023, 1, 1)
-    end_date: Final[datetime] = datetime(2023, 1, 31)
+    start_date: Final[datetime] = datetime(2022, 1, 1)
+    end_date: Final[datetime] = datetime(2022, 12, 31)
     lat: Final[float] = 53.4
     lon: Final[float] = -6.3
 
@@ -44,6 +44,7 @@ def save_test_power_output_for_set_lon_lat() -> None:
         lat=lat,
         start_date=start_date,
         end_date=end_date,
+        emissivity_method="martin-berdahl",
     )
 
 
@@ -52,6 +53,7 @@ def process_batch(
     end_date: datetime,
     batch_start: int,
     batch_quantity: int | None,
+    emissivity_method: Literal["swinbank", "cloudy_sky", "martin-berdahl"],
 ) -> None:
     coordinates_for_assessment: Final[
         list[tuple[float, float]]
@@ -84,6 +86,7 @@ def process_batch(
                 lat=lat,
                 start_date=start_date,
                 end_date=end_date,
+                emissivity_method=emissivity_method,
             )
         except InsufficientClimateDataError as e:
             warnings.warn(f"{e}. Skipping lat: {lat}, lon: {lon}.")
