@@ -1,10 +1,12 @@
 from datetime import datetime
 from typing import Final, Literal
 
+import numpy as np
 from astropy import units as u
 
 from src.api.copernicus_climate_data import CopernicusClimateData
 from src.calculators.sky_emissivity import SkyEmissivity
+from src.exceptions import InsufficientClimateDataError
 
 
 class SkyTemperature:
@@ -37,6 +39,8 @@ class SkyTemperature:
                 t_sky: Final[u.Quantity] = (
                     (sky_emissivity**0.25) * t_ambient
                 ).value * u.Kelvin
+                if np.isnan(t_sky):
+                    raise InsufficientClimateDataError(f"{t_sky} cannot be NaN")
                 return t_sky
             case "swinbank":
                 """Swinbank's formula, assuming use during the night.

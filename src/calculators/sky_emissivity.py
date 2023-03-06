@@ -2,10 +2,11 @@ import math
 from datetime import datetime
 from typing import Final, Literal
 
+import numpy as np
 from astropy import units as u
 
 from src.api.copernicus_climate_data import CopernicusClimateData
-from src.exceptions import UnitError
+from src.exceptions import InsufficientClimateDataError, UnitError
 
 
 class SkyEmissivity:
@@ -52,9 +53,15 @@ class SkyEmissivity:
         emissivity_hourly_diurnal_correction: Final[float] = 0.013 * math.cos(
             2 * math.pi * ((date.hour + 1) / 24)
         )
-        emissivity_elevation_correction: Final[float] = 0.00012 * (
-            surface_pressure_mbar.value - 1000
-        )
+
+        emissivity_elevation_correction: float = 0.0
+        if not np.isnan(surface_pressure_mbar):
+            emissivity_elevation_correction = 0.00012 * (
+                surface_pressure_mbar.value - 1000
+            )
+        else:
+            print("surface_pressure was NaN")
+
         emissivity_clearsky: Final[float] = (
             emissivity_monthly
             + emissivity_hourly_diurnal_correction
@@ -87,6 +94,8 @@ class SkyEmissivity:
                 "Sky emissivity must be greater than 0 and less than 1",
                 emissivity_sky,
             )
+        if np.isnan(emissivity_sky):
+            raise InsufficientClimateDataError("Emissivity cannot be NaN")
         return emissivity_sky
 
     def _get_dewpoint_temperature(

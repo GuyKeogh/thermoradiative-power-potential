@@ -63,7 +63,12 @@ def save_power_output_between_dates(
         if power_output > 0:
             total_kwh += power_output / 1000
 
-        dt_data_dict[dt] = (power_output, optimal_voltage, t_sky, t_surf)
+        dt_data_dict[dt] = (
+            power_output,
+            optimal_voltage.value,
+            t_sky.value,
+            t_surf.value,
+        )
 
         print(
             f"For {dt}, surface temperature = {t_surf} and sky temperature = {t_sky}.\nPower output = {power_output}W"
