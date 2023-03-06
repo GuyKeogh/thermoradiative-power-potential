@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Final, Literal
 
 from src.plots.resource_assessment_choropleth_map import CreateChoroplethMap
+from src.plots.temperature_plot import CreateTemperaturePlots
 from src.processing.process_power_output import (
     process_batch,
     save_test_power_output_for_set_lon_lat,
@@ -19,6 +20,13 @@ parser.add_argument(
     "--skip_worldmap",
     help="If passed, the application will not create worldmap with saved datapoints overlaid. "
     "Example usage: `python main.py --skip_worldmap`",
+    action="store_true",
+    required=False,
+)
+parser.add_argument(
+    "--skip_tempplot",
+    help="If passed, the application will not create plots of surface vs sky temperatures. "
+    "Example usage: `python main.py --skip_tempplot`",
     action="store_true",
     required=False,
 )
@@ -70,3 +78,8 @@ if __name__ == "__main__":
 
     if not args.skip_worldmap:
         CreateChoroplethMap().create_map(emissivity_method=emissivity_method)
+
+    if not args.skip_tempplot:
+        CreateTemperaturePlots().plot_temperatures_and_power_vs_dates(
+            emissivity_method=emissivity_method
+        )
