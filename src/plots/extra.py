@@ -14,7 +14,6 @@ class ExtraPlots:
         self.base_path: Final[str] = "data/out/extraplots/"
         os.makedirs(self.base_path, exist_ok=True)
 
-        # bandgap: float = 0.17
         for bandgap in [0.01, 0.05, 0.10, 0.15, 0.20, 0.17]:
             df: pd.DataFrame = self._get_temperatures_vs_power_and_voltage(
                 bandgap=bandgap
@@ -96,7 +95,7 @@ class ExtraPlots:
             os.path.join(self.base_path, f"power_per_temp_{bandgap}eV.pdf"),
             format="pdf",
         )
-        fig.write_html(self.base_path, f"power_per_temp_{bandgap}eV.pdf")
+        fig.write_html(os.path.join(self.base_path, f"power_per_temp_{bandgap}eV.html"))
 
     def _save_voltage_vs_temperatures(self, df: pd.DataFrame, bandgap: float) -> None:
         voltage_df: Final[pd.DataFrame] = df.set_index(["t_surf", "t_sky"])[

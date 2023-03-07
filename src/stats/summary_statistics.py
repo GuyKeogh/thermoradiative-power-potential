@@ -51,10 +51,10 @@ class SummaryStatistics:
                 "November",
                 "December",
             ]
-            # month_means.index = month_means.index.map(lambda x: x.month_name())
 
             output_dir: str = os.path.abspath(
-                f"data/out/{emissivity_method}/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"
+                f"data/out/{emissivity_method}/"
+                f"{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"
             )
             hour_means.to_csv(os.path.join(output_dir, "mean_by_hour.csv"))
             month_means.to_csv(os.path.join(output_dir, "mean_by_month.csv"))

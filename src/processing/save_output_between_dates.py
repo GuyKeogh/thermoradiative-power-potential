@@ -23,7 +23,8 @@ def save_power_output_between_dates(
     emissivity_method: Literal["swinbank", "martin-berdahl"],
 ):
     output_dir: Final[str] = os.path.abspath(
-        f"data/out/{emissivity_method}/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"
+        f"data/out/{emissivity_method}/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/"
+        f"{lat}_{lon}/"
     )
     os.makedirs(output_dir, exist_ok=True)
 

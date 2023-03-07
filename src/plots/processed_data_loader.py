@@ -26,7 +26,8 @@ def get_dict_of_processed_data(
         lon: float = float(lon_str)
 
         output_dir: str = os.path.abspath(
-            f"data/out/{emissivity_method}/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/{lat}_{lon}/"
+            f"data/out/{emissivity_method}/{start_date.strftime('%Y%m%d-%H%M%S')}_{end_date.strftime('%Y%m%d-%H%M%S')}/"
+            f"{lat}_{lon}/"
         )
         json_filepath: str = os.path.join(output_dir, "json_data.json")
         df_filepath: str = os.path.join(output_dir, "data_per_dt.csv")
