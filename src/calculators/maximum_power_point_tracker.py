@@ -2,7 +2,7 @@ from decimal import Decimal
 from functools import lru_cache
 from typing import Final
 
-import numpy as np
+import scipy
 from astropy import units as u
 
 from src.calculators.total_power_output import TotalPowerOutput
@@ -19,27 +19,27 @@ class MaximumPowerPointTracker:
         t_cell: u.Quantity,
         E_g: u.Quantity,
     ):
-        voltage_to_power_dict: dict[Decimal, u.Quantity] = dict()
-        voltage_range: Final[np.ndarray] = np.arange(
-            start=-0.05, stop=-0.01, step=0.001
-        )
-        voltage: float
-        for voltage in voltage_range:
-            voltage_decimal: Decimal = Decimal(voltage).quantize(Decimal(".001"))
-            voltage_to_power_dict[
-                voltage_decimal
-            ] = self._calculate_power_output_for_voltage(
-                voltage=(voltage_decimal * u.volt),
-                E_g=E_g,
-                t_cell=t_cell,
-                t_sky=t_sky,
-            )
+        self.t_sky: Final[u.Quantity] = t_sky
+        self.t_cell: Final[u.Quantity] = t_cell
+        self.E_g: Final[u.Quantity] = E_g
 
-        self.voltage_to_power_dict: Final[
-            dict[Decimal, u.Quantity]
-        ] = voltage_to_power_dict
-        self.voltage_with_max_power: Final[Decimal] = max(
-            voltage_to_power_dict, key=lambda key: voltage_to_power_dict[key]
+        voltage_optimise_function: Final[
+            scipy.optimize.OptimizeResult
+        ] = scipy.optimize.minimize_scalar(fun=self._power_output, bounds=[-5.0, 0.0])
+        self.optimal_voltage: Final[u.Quantity] = (
+            round(voltage_optimise_function.x, 3) * u.volt
+        )
+        self.max_power: Final[u.Quantity] = -voltage_optimise_function.fun * (
+            u.watt / u.meter**2
+        )  #  Changed sign for minimize function to get maximize, now undo
+
+    def _power_output(self, voltage: float):
+        voltage_decimal: Final[Decimal] = Decimal(voltage).quantize(Decimal(".001"))
+        return -self._calculate_power_output_for_voltage(
+            voltage=(voltage_decimal * u.volt),
+            E_g=self.E_g,
+            t_cell=self.t_cell,
+            t_sky=self.t_sky,
         )
 
     @classmethod
@@ -50,7 +50,7 @@ class MaximumPowerPointTracker:
         E_g: u.Quantity,
         t_sky: u.Quantity,
         t_cell: u.Quantity,
-    ) -> u.Quantity:
+    ) -> float:
         voltage = round(voltage.value, 3) * u.volt
         t_sky = round(t_sky.value) * u.Kelvin
         t_cell = round(t_cell.value) * u.Kelvin
@@ -77,14 +77,6 @@ class MaximumPowerPointTracker:
                 * u.watt
             )
             self.cache[cache_lookup] = power_output
-            return power_output
+            return power_output.value
         else:
-            return self.cache[cache_lookup]
-
-    def get_max_power(self) -> u.Quantity:
-        return self.voltage_to_power_dict[self.voltage_with_max_power].value * (
-            u.watt / u.meter**2
-        )
-
-    def get_optimal_voltage(self) -> u.Quantity:
-        return self.voltage_with_max_power * u.volt
+            return self.cache[cache_lookup].value

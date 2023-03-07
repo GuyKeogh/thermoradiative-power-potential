@@ -9,7 +9,6 @@ from src.calculators.coordinates_for_assessment import get_coordinates_for_asses
 from src.calculators.maximum_power_point_tracker import MaximumPowerPointTracker
 from src.exceptions import InsufficientClimateDataError
 from src.processing.save_output_between_dates import save_power_output_between_dates
-from src.stats.summary_statistics import SummaryStatistics
 
 
 def get_test_power_output_for_set_temperatures() -> u.Quantity:
@@ -19,7 +18,7 @@ def get_test_power_output_for_set_temperatures() -> u.Quantity:
 
     power_output = MaximumPowerPointTracker(
         t_cell=t_surf, t_sky=t_sky, E_g=semiconductor_bandgap
-    ).get_max_power()
+    ).max_power
     print(
         f"Surface temperature = {t_surf} and sky temperature = {t_sky}.\nPower output = {power_output.value}W"
     )

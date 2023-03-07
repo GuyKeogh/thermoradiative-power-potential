@@ -53,10 +53,10 @@ def save_power_output_between_dates(
             t_sky=t_sky,
             t_cell=t_surf,
         )
-        power_output = mpp_object.get_max_power()
-        optimal_voltage = mpp_object.get_optimal_voltage()
+        power_output = mpp_object.max_power
+        optimal_voltage = mpp_object.optimal_voltage
         print(
-            f"Produced {power_output} at optimal voltage of {mpp_object.get_optimal_voltage()}"
+            f"Produced {power_output} at optimal voltage of {mpp_object.optimal_voltage}"
         )
 
         power_output = power_output.value
