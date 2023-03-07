@@ -33,7 +33,7 @@ class ExtraPlots:
             for sky_temp in sky_temperatures
             for surf_temp in surface_temperatures
         ]:
-            print(f"Trying {sky_temp}, {surf_temp}")
+            print(f"Trying sky_temp: {sky_temp}, surface_temp: {surf_temp}")
             t_surf: u.Quantity = surf_temp * u.K
             t_sky: u.Quantity = sky_temp * u.K
 
@@ -96,6 +96,7 @@ class ExtraPlots:
             os.path.join(self.base_path, f"power_per_temp_{bandgap}eV.pdf"),
             format="pdf",
         )
+        fig.write_html(self.base_path, f"power_per_temp_{bandgap}eV.pdf")
 
     def _save_voltage_vs_temperatures(self, df: pd.DataFrame, bandgap: float) -> None:
         voltage_df: Final[pd.DataFrame] = df.set_index(["t_surf", "t_sky"])[
@@ -129,3 +130,4 @@ class ExtraPlots:
             os.path.join(self.base_path, f"voltage_per_temp_{bandgap}eV.pdf"),
             format="pdf",
         )
+        fig.write_html(self.base_path, f"voltage_per_temp_{bandgap}eV.pdf")
