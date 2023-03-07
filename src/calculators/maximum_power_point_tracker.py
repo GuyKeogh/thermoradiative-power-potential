@@ -21,7 +21,7 @@ class MaximumPowerPointTracker:
     ):
         voltage_to_power_dict: dict[Decimal, u.Quantity] = dict()
         voltage_range: Final[np.ndarray] = np.arange(
-            start=-0.035, stop=-0.01, step=0.001
+            start=-0.05, stop=-0.01, step=0.001
         )
         voltage: float
         for voltage in voltage_range:

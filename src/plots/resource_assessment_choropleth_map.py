@@ -83,11 +83,6 @@ class CreateChoroplethMap:
         os.makedirs(base_path, exist_ok=True)
         pio.write_image(
             fig,
-            os.path.join(base_path, f"assessment_map_{emissivity_method}.png"),
-            format="png",
-        )
-        pio.write_image(
-            fig,
             os.path.join(base_path, f"assessment_map_{emissivity_method}.pdf"),
             format="pdf",
         )

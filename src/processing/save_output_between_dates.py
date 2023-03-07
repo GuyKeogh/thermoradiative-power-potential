@@ -79,6 +79,8 @@ def save_power_output_between_dates(
         orient="index",
         columns=["average_power_watts_per_sqm", "optimal_voltage", "t_sky", "t_surf"],
     )
+
+    print(f"Saving to {output_dir}")
     dt_power_df.to_csv(os.path.join(output_dir, "data_per_dt.csv"))
     with open(os.path.join(output_dir, "json_data.json"), "w") as outfile:
         json.dump({"total_kwh_per_square_m": total_kwh}, outfile)

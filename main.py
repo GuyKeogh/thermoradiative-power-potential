@@ -2,12 +2,14 @@ import argparse
 from datetime import datetime
 from typing import Final, Literal
 
+from src.plots.extra import ExtraPlots
 from src.plots.resource_assessment_choropleth_map import CreateChoroplethMap
 from src.plots.temperature_plot import CreateTemperaturePlots
 from src.processing.process_power_output import (
     process_batch,
     save_test_power_output_for_set_lon_lat,
 )
+from src.stats.summary_statistics import SummaryStatistics
 
 parser = argparse.ArgumentParser(prog="Thermoradiative Power Output Prediction")
 parser.add_argument(
@@ -38,6 +40,20 @@ parser.add_argument(
     required=False,
 )
 parser.add_argument(
+    "--skip_summarystatistics",
+    help="If passed, the application will not process summary statistics at locations"
+    "Example usage: `python main.py --skip_summarystatistics`",
+    action="store_true",
+    required=False,
+)
+parser.add_argument(
+    "--skip_extraplots",
+    help="If passed, the application will not create generic plots to show relationships"
+    "Example usage: `python main.py --skip_extraplots`",
+    action="store_true",
+    required=False,
+)
+parser.add_argument(
     "--emissivity_method",
     help="If passed, sets what method to use to calculate emissivity."
     "Example usage: `python main.py --emissivity_method martin-berdahl`",
@@ -64,7 +80,7 @@ if __name__ == "__main__":
             print(
                 "Running in demonstration mode. Pass --batch_start to process real data."
             )
-            save_test_power_output_for_set_lon_lat()
+            save_test_power_output_for_set_lon_lat(emissivity_method=emissivity_method)
 
         else:
             print(f"Processing from {args.batch_start}")
@@ -83,3 +99,11 @@ if __name__ == "__main__":
         CreateTemperaturePlots().plot_temperatures_and_power_vs_dates(
             emissivity_method=emissivity_method
         )
+
+    if not args.skip_summarystatistics:
+        SummaryStatistics().output_summary_statistics(
+            emissivity_method=emissivity_method
+        )
+
+    if not args.skip_extraplots:
+        ExtraPlots()

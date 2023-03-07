@@ -73,14 +73,11 @@ class CreateTemperaturePlots:
         )
 
         base_path: Final[str] = f"data/out/plots/{emissivity_method}/{lat}_{lon}/"
-        os.makedirs(base_path)
+        os.makedirs(base_path, exist_ok=True)
         pio.write_image(
             fig,
-            os.path.join(base_path, f"assessment_map_{emissivity_method}.png"),
-            format="png",
-        )
-        pio.write_image(
-            fig,
-            os.path.join(base_path, f"assessment_map_{emissivity_method}.pdf"),
+            os.path.join(
+                base_path, f"power_and_temperatures_vs_time_{emissivity_method}.pdf"
+            ),
             format="pdf",
         )

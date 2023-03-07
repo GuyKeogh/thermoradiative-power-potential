@@ -31,7 +31,9 @@ def get_dict_of_processed_data(
         json_filepath: str = os.path.join(output_dir, "json_data.json")
         df_filepath: str = os.path.join(output_dir, "data_per_dt.csv")
         try:
-            df: pd.DataFrame = pd.read_csv(filepath_or_buffer=df_filepath, index_col=0)
+            df: pd.DataFrame = pd.read_csv(
+                filepath_or_buffer=df_filepath, index_col=0, parse_dates=True
+            )
             with open(json_filepath, "r") as infile:
                 data = json.load(infile)
                 total_kwh: float = data["total_kwh_per_square_m"]

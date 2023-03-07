@@ -9,6 +9,7 @@ from src.calculators.coordinates_for_assessment import get_coordinates_for_asses
 from src.calculators.maximum_power_point_tracker import MaximumPowerPointTracker
 from src.exceptions import InsufficientClimateDataError
 from src.processing.save_output_between_dates import save_power_output_between_dates
+from src.stats.summary_statistics import SummaryStatistics
 
 
 def get_test_power_output_for_set_temperatures() -> u.Quantity:
@@ -25,7 +26,9 @@ def get_test_power_output_for_set_temperatures() -> u.Quantity:
     return power_output
 
 
-def save_test_power_output_for_set_lon_lat() -> None:
+def save_test_power_output_for_set_lon_lat(
+    emissivity_method: Literal["swinbank", "martin-berdahl"]
+) -> None:
     start_date: Final[datetime] = datetime(2022, 1, 1)
     end_date: Final[datetime] = datetime(2022, 12, 31)
     lat: Final[float] = 53.4
@@ -44,7 +47,7 @@ def save_test_power_output_for_set_lon_lat() -> None:
         lat=lat,
         start_date=start_date,
         end_date=end_date,
-        emissivity_method="martin-berdahl",
+        emissivity_method=emissivity_method,
     )
 
 
