@@ -27,7 +27,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--skip_tempplot",
-    help="If passed, the application will not create plots of surface vs sky temperatures. "
+    help="If passed, the application will not create plots of powers for surface vs sky temperatures by date. "
     "Example usage: `python main.py --skip_tempplot`",
     action="store_true",
     required=False,
