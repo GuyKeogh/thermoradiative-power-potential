@@ -55,7 +55,7 @@ class CreateChoroplethMap:
                     ),
                     cmin=0,
                     cmax=df["value"].max(),
-                    colorbar_title="Total Power Output (kWh/m<sup>3</sup>)",
+                    colorbar_title="Total Power Output (kWh/m<sup>2</sup>)",
                 ),
             )
         )

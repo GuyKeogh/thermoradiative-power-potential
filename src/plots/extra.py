@@ -14,7 +14,7 @@ class ExtraPlots:
         self.base_path: Final[str] = "data/out/extraplots/"
         os.makedirs(self.base_path, exist_ok=True)
 
-        for bandgap in [0.01, 0.05, 0.10, 0.15, 0.20, 0.17]:
+        for bandgap in [0.01, 0.10, 0.17]:
             df: pd.DataFrame = self._get_temperatures_vs_power_and_voltage(
                 bandgap=bandgap
             )
