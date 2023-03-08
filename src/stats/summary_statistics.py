@@ -33,10 +33,17 @@ class SummaryStatistics:
             hour_means: pd.Series = df.groupby(df.index.hour)[
                 "average_power_watts_per_sqm"
             ].mean()
+            hour_stddev: pd.Series = df.groupby(df.index.hour)[
+                "average_power_watts_per_sqm"
+            ].std()
 
             month_means: pd.Series = df.groupby(df.index.month)[
                 "average_power_watts_per_sqm"
             ].mean()
+            month_stddev: pd.Series = df.groupby(df.index.month)[
+                "average_power_watts_per_sqm"
+            ].std()
+
             month_means.index = [
                 "January",
                 "February",
@@ -60,32 +67,38 @@ class SummaryStatistics:
             month_means.to_csv(os.path.join(output_dir, "mean_by_month.csv"))
             fig = px.bar(
                 hour_means,
+                error_y=hour_stddev,
                 labels={
                     "value": "Mean Potential Power (Wm<sup>-2</sup>)",
                     "index": "Hour of Day",
                 },
             )
+
             fig_month = px.bar(
                 month_means,
+                error_y=month_stddev,
                 labels={
                     "value": "Mean Potential Power (Wm<sup>-2</sup>)",
                     "index": "Month of Year",
                 },
             )
+
+            fig.update_layout(showlegend=False)
+            fig_month.update_layout(showlegend=False)
             fig.show()
             fig_month.show()
 
             pio.write_image(
                 fig,
                 os.path.join(
-                    base_path, f"mean_potential_by_hour_{emissivity_method}.pdf"
+                    output_dir, f"mean_potential_by_hour_{emissivity_method}.pdf"
                 ),
                 format="pdf",
             )
             pio.write_image(
                 fig_month,
                 os.path.join(
-                    base_path, f"mean_potential_by_month_{emissivity_method}.pdf"
+                    output_dir, f"mean_potential_by_month_{emissivity_method}.pdf"
                 ),
                 format="pdf",
             )
