@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Final, Literal
 
 import cdsapi
-import numpy as np
+import pandas as pd
 import xarray as xr
 from astropy import units as u
 from xarray import DataArray
@@ -48,7 +48,7 @@ class CopernicusClimateData:
             "skt",
             "d2m",
             "tcc",
-            # "strd",
+            "sp",
             "t2m",
             "cbh",
         ]
@@ -72,7 +72,7 @@ class CopernicusClimateData:
                 print(f"Already exists at {filepath}!")
             else:
                 print("File doesn't exist! Downloading...")
-                self._download_surface_temperature_file_for_month_for_region(
+                self._download_dataset_for_month_for_region(
                     filepath=filepath,
                     variable_shortname=dataset_shortname,
                     lon_min=lon_min,
@@ -89,89 +89,33 @@ class CopernicusClimateData:
     def get_value_from_dataset(
         self, lat: float, lon: float, dataset_shortname: str, date: datetime
     ) -> float:
-        is_data_nested = True if dataset_shortname in {"cbh"} else False
-
         hour_str = str(date.hour) if date.hour >= 10 else f"0{date.hour}"
         day_str = str(date.day) if date.day >= 10 else f"0{date.day}"
         month_str = str(date.month) if date.month >= 10 else f"0{date.month}"
+        time_str: Final[str] = f"{date.year}-{month_str}-{day_str}T{hour_str}:00"
 
-        try:
-            index_in_dataset: int
-            index_difference: int | None = None
-            match is_data_nested:
-                case False:
-                    index_in_dataset = date.hour + date.day * 24 - 24
-                case True:
-                    dataset_dates: Final[np.ndarray] = (
-                        self.temperature_datasets[(date.month, dataset_shortname)]
-                        .sel(latitude=lat, longitude=lon, method="nearest")
-                        .coords["time"]
-                        .values
-                    )
+        selected_data = self.temperature_datasets[(date.month, dataset_shortname)][
+            dataset_shortname
+        ].sel(latitude=lat, longitude=lon, method="nearest")
 
-                    if np.datetime64(date) in dataset_dates:
-                        previous_dataset_date = np.datetime64(date)
-                        index_difference = 0
-                    else:
-                        previous_dataset_date = min(
-                            item for item in dataset_dates if item > np.datetime64(date)
-                        )
-                        index_difference = round(
-                            (np.datetime64(date) - previous_dataset_date)
-                            / np.timedelta64(1, "h")
-                        )
-
-                    index_in_dataset = np.where(previous_dataset_date == dataset_dates)[
-                        0
-                    ][0]
-                case _:
-                    raise ValueError("Case must be boolean", is_data_nested)
-
-            if is_data_nested:
-                """two lookups required"""
-                if index_difference is None:
-                    raise ValueError("index_difference not set")
-
-                return (
-                    self.temperature_datasets[(date.month, dataset_shortname)][
-                        dataset_shortname
-                    ]
-                    .sel(latitude=lat, longitude=lon, method="nearest")
-                    .values[index_in_dataset][index_difference]
-                )
-            elif self.temperature_datasets[(date.month, dataset_shortname)].sel(
-                latitude=lat, longitude=lon, method="nearest"
-            ).coords["time"][index_in_dataset] == np.datetime64(
-                f"{date.year}-{month_str}-{day_str}T{hour_str}:00"
-            ):
-                return float(
-                    self.temperature_datasets[(date.month, dataset_shortname)][
-                        dataset_shortname
-                    ].sel(latitude=lat, longitude=lon, method="nearest")[
-                        index_in_dataset
-                    ]
-                )
-            else:
-                raise ValueError(
-                    "Date does not correspond to expected", dataset_shortname, str(date)
+        match dataset_shortname:
+            case "skt" | "tcc" | "t2m":
+                return float(selected_data.sel(time=time_str, method=None))
+            case "sp":
+                return float(selected_data[date.day][date.hour])
+            case "cbh":
+                relevant_data: Final[DataArray] = selected_data.sel(
+                    time=time_str, method="ffill"
                 )
 
-        except IndexError as e:
-            # data possibly given daily with steps
-            if self.temperature_datasets[(date.month, dataset_shortname)].sel(
-                latitude=lat, longitude=lon, method="nearest"
-            ).coords["time"][date.day] == np.datetime64(
-                f"{date.year}-{month_str}-{day_str}T00:00"
-            ):
-                return float(
-                    self.temperature_datasets[(date.month, dataset_shortname)][
-                        dataset_shortname
-                    ].sel(latitude=lat, longitude=lon, method="nearest")[date.day][
-                        date.hour
-                    ]
+                data_time: Final[pd.Timestamp] = pd.Timestamp(relevant_data.time.values)
+                index: Final[int] = int(
+                    (date - data_time) / pd.Timedelta(value=1, unit="h")
                 )
-            else:
-                raise ValueError("Date does not correspond to expected") from e
+
+                return float(relevant_data[index])
+            case _:
+                raise ValueError("Unknown dataset_shortname", dataset_shortname)
 
     def get_average_value_from_dataset(
         self,
@@ -199,6 +143,16 @@ class CopernicusClimateData:
                 dataset_shortname="t2m", date=date, lat=lat, lon=lon
             )
             * u.Kelvin
+        )
+
+    def get_surface_pressure(
+        self, lat: float, lon: float, date: datetime
+    ) -> u.Quantity:
+        return (
+            self.get_value_from_dataset(
+                dataset_shortname="sp", date=date, lat=lat, lon=lon
+            )
+            * u.Pascal
         )
 
     def get_cloud_base_height(
@@ -273,7 +227,7 @@ class CopernicusClimateData:
             "radiative-power-output-prediction/data/",
         )
 
-    def _download_surface_temperature_file_for_month_for_region(
+    def _download_dataset_for_month_for_region(
         self,
         filepath: str,
         variable_shortname: str,
@@ -290,8 +244,8 @@ class CopernicusClimateData:
             "d2m": "2m_dewpoint_temperature",
             "tcc": "total_cloud_cover",
             "t2m": "2m_temperature",
-            "strd": "surface_thermal_radiation_downwards",
             "cbh": "cloud_base_height",
+            "sp": "surface_pressure",
         }
         variable_longname: Final[str] = dataset_shortname_to_variable_name_dict[
             variable_shortname
@@ -389,11 +343,13 @@ class CopernicusClimateData:
             request_arguments["product_type"] = "reanalysis"
 
         try:
-            self.c.retrieve(
-                dataset,
-                request_arguments,
-                filepath,
-            )
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message="Unverified HTTPS request")
+                self.c.retrieve(
+                    dataset,
+                    request_arguments,
+                    filepath,
+                )
         except Exception:
             print(request_arguments)
             raise
