@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "radiative-power-output-prediction"
-version = "0.0.1"
-description = ""
+version = "1.0.0"
+description = "Provides a model for the estimation of potential thermoradiative power potential by location on Earth and relevant plots, and production of plots showing relationships in this TR cell."
 authors = ["Guy Keogh <guykeogh@proton.me>"]
 readme = "README.md"
 
