@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "radiative-power-output-prediction"
-version = "0.0.1"
+version = "1.0.0"
 description = ""
 authors = ["Guy Keogh <guykeogh@proton.me>"]
 readme = "README.md"
